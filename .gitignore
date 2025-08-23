@@ -1,0 +1,65 @@
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+site/.env
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs/
+*.log
+bot-out.log
+bot-error.log
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Cache
+cache/
+.cache/
+tmp/
+temp/
+
+# Database
+*.sql.backup
+*.db
+*.sqlite
+
+# PHP
+site/vendor/
+site/composer.lock
+
+# Claude Code files
+.claude/
+CLAUDE_SESSION_*
+claude_*.md
+*.claude
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Runtime
+*.pid
+*.lock

@@ -1,0 +1,29 @@
+{
+  "name": "taureau_celtique",
+  "version": "4.2.a",
+  "description": "Bot Discord d'aide pour les WebDev et gestion de projets",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "deploy:commands": "node src/deploy-commands.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.16.1",
+    "chalk": "^5.4.1",
+    "cors": "^2.8.5",
+    "discord.js": "^14.19.3",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0",
+    "node-cron": "^3.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
