@@ -7,8 +7,10 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "deploy": "node src/deploy-commands.js",
-    "deploy:commands": "node src/deploy-commands.js"
+    "deploy": "node src/deploy.js",
+    "deploy:global": "node src/deploy.js --global",
+    "deploy:admin": "node src/deploy.js --admin",
+    "deploy:db": "node src/deploy.js --database"
   },
   "engines": {
     "node": ">=20.0.0"

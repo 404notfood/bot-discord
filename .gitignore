@@ -54,6 +54,7 @@ site/composer.lock
 CLAUDE_SESSION_*
 claude_*.md
 *.claude
+CLAUDE.md
 
 # Backup files
 *.bak
