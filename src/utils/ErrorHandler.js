@@ -11,37 +11,37 @@ export class ErrorHandler {
     static errorTypes = {
         COMMAND_ERROR: {
             name: 'CommandError',
-            userMessage: '❌ Une erreur est survenue lors de l\'exécution de la commande.',
+            userMessage: ' Une erreur est survenue lors de l\'exécution de la commande.',
             logLevel: 'error'
         },
         VALIDATION_ERROR: {
             name: 'ValidationError',
-            userMessage: '❌ Paramètres invalides.',
+            userMessage: ' Paramètres invalides.',
             logLevel: 'warn'
         },
         PERMISSION_ERROR: {
             name: 'PermissionError',
-            userMessage: '❌ Vous n\'avez pas les permissions nécessaires.',
+            userMessage: ' Vous n\'avez pas les permissions nécessaires.',
             logLevel: 'warn'
         },
         DATABASE_ERROR: {
             name: 'DatabaseError',
-            userMessage: '❌ Erreur de base de données. Veuillez réessayer plus tard.',
+            userMessage: ' Erreur de base de données. Veuillez réessayer plus tard.',
             logLevel: 'error'
         },
         RATE_LIMIT_ERROR: {
             name: 'RateLimitError',
-            userMessage: '⏱️ Vous allez trop vite ! Patientez un peu.',
+            userMessage: '⏱ Vous allez trop vite ! Patientez un peu.',
             logLevel: 'info'
         },
         NETWORK_ERROR: {
             name: 'NetworkError',
-            userMessage: '🌐 Problème de connexion. Réessayez dans quelques instants.',
+            userMessage: ' Problème de connexion. Réessayez dans quelques instants.',
             logLevel: 'error'
         },
         BOT_ERROR: {
             name: 'BotError',
-            userMessage: '🤖 Erreur interne du bot.',
+            userMessage: ' Erreur interne du bot.',
             logLevel: 'error'
         }
     };
