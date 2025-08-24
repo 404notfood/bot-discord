@@ -31,14 +31,21 @@ session_start();
 // Obtenir l'URL demandée
 $requestUri = $_SERVER['REQUEST_URI'];
 
-// Supprimer le chemin de base
-$basePath = dirname($_SERVER['SCRIPT_NAME']);
-if ($basePath !== '/') {
-    $requestUri = substr($requestUri, strlen($basePath));
-}
-
 // Supprimer la chaîne de requête
 $requestUri = explode('?', $requestUri)[0];
+
+// Supprimer les slashes en début et fin
+$requestUri = trim($requestUri, '/');
+
+// Debug: afficher l'URL traitée
+if (isset($_SERVER['DEBUG']) && $_SERVER['DEBUG']) {
+    echo "<div style='background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;'>";
+    echo "<strong>Debug Routage:</strong><br>";
+    echo "REQUEST_URI original: " . $_SERVER['REQUEST_URI'] . "<br>";
+    echo "URL après traitement: '" . $requestUri . "'<br>";
+    echo "Méthode: " . $_SERVER['REQUEST_METHOD'] . "<br>";
+    echo "</div>";
+}
 
 // Créer le routeur
 $router = new Core\Router();

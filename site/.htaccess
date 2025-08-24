@@ -1,17 +1,19 @@
 RewriteEngine On
 
-# Définir le répertoire de base
-RewriteBase /
+# Pas de RewriteBase car nous sommes déjà dans le bon dossier
 
-# Ne pas appliquer les règles de réécriture aux fichiers et répertoires existants
+# Index.php par défaut pour la racine
+DirectoryIndex index.php
+
+# Ne pas réécrire les fichiers existants
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# Rediriger toutes les autres requêtes vers index.php
+# Rediriger tout vers index.php
 RewriteRule ^(.*)$ index.php [QSA,L]
 
-# Définir le document d'erreur 404
-ErrorDocument 404 /index.php
+# Définir le document d'erreur 404 (relatif au répertoire courant)
+ErrorDocument 404 index.php
 
 # Activer le module PHP
 <IfModule mod_php7.c>

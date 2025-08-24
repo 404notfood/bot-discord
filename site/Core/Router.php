@@ -53,8 +53,40 @@ class Router
      */
     private function match($url)
     {
+        // Debug
+        if (isset($_SERVER['DEBUG']) && $_SERVER['DEBUG']) {
+            echo "<div style='background: #e8f4f8; padding: 10px; margin: 10px 0; border: 1px solid #b3d9e6;'>";
+            echo "<strong>Debug Match:</strong><br>";
+            echo "URL à matcher: '" . $url . "'<br>";
+            echo "Routes disponibles:<br>";
+            foreach ($this->routes as $route => $params) {
+                echo "- Pattern: " . $route . " -> Controller: " . ($params['controller'] ?? 'N/A') . ", Action: " . ($params['action'] ?? 'N/A') . "<br>";
+            }
+            echo "</div>";
+        }
+        
         foreach ($this->routes as $route => $params) {
+            // Debug détaillé du matching
+            if (isset($_SERVER['DEBUG']) && $_SERVER['DEBUG']) {
+                echo "<div style='background: #fff3cd; padding: 5px; margin: 5px 0; border: 1px solid #ffeaa7;'>";
+                echo "<strong>Test:</strong> Pattern '" . $route . "' contre URL '" . $url . "'<br>";
+                $matchResult = preg_match($route, $url, $matches);
+                echo "Résultat preg_match: " . ($matchResult ? 'MATCH' : 'NO MATCH') . "<br>";
+                if ($matchResult) {
+                    echo "Matches: " . print_r($matches, true) . "<br>";
+                }
+                echo "</div>";
+            }
+            
             if (preg_match($route, $url, $matches)) {
+                // Debug
+                if (isset($_SERVER['DEBUG']) && $_SERVER['DEBUG']) {
+                    echo "<div style='background: #d4edda; padding: 10px; margin: 10px 0; border: 1px solid #c3e6cb;'>";
+                    echo "<strong>Route trouvée:</strong> " . $route . "<br>";
+                    echo "Paramètres: " . print_r($params, true) . "<br>";
+                    echo "</div>";
+                }
+                
                 // Extraire les paramètres nommés (id, slug, etc.)
                 foreach ($matches as $key => $match) {
                     if (is_string($key)) {
@@ -64,6 +96,13 @@ class Router
                 
                 return $params;
             }
+        }
+        
+        // Debug
+        if (isset($_SERVER['DEBUG']) && $_SERVER['DEBUG']) {
+            echo "<div style='background: #f8d7da; padding: 10px; margin: 10px 0; border: 1px solid #f5c6cb;'>";
+            echo "<strong>Aucune route trouvée pour:</strong> '" . $url . "'<br>";
+            echo "</div>";
         }
         
         return false;
@@ -81,9 +120,9 @@ class Router
         // Supprimer les slashes en début et fin d'URL
         $url = trim($url, '/');
         
-        // Si l'URL est vide, utiliser le contrôleur et l'action par défaut
+        // Si l'URL est vide, traiter comme la route racine
         if (empty($url)) {
-            $url = $this->config['routes']['default_controller'] . '/' . $this->config['routes']['default_action'];
+            $url = '';
         }
         
         // Trouver la route correspondante
