@@ -25,6 +25,7 @@ import { PermissionMiddleware } from './middleware/middlewares/PermissionMiddlew
 // Autres services
 import ReminderManager from './utils/reminderManager.js';
 import ApiServer from './api/apiServer.js';
+import { EnhancedStudiService } from './services/EnhancedStudiService.js';
 
 // Configuration ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -51,6 +52,7 @@ export class DiscordBot {
         // Services optionnels
         this.reminderManager = null;
         this.apiServer = null;
+        this.studiService = null;
 
         // État du bot
         this.isReady = false;
@@ -93,6 +95,9 @@ export class DiscordBot {
             // 6. Configurer les gestionnaires d'événements personnalisés
             this.setupCustomEventHandlers();
 
+            // 7. Initialiser le service Studi
+            await this.initializeStudiService();
+
             Logger.info('✅ Initialisation terminée');
             return true;
 
@@ -134,6 +139,31 @@ export class DiscordBot {
             Logger.info('✅ Gestionnaire de permissions initialisé');
         } else {
             Logger.warn('⚠️  Permissions en mode dégradé');
+        }
+    }
+
+    /**
+     * Initialise le service Studi
+     */
+    async initializeStudiService() {
+        Logger.info('🛡️ Initialisation du service anti-Studi...');
+        
+        try {
+            this.studiService = new EnhancedStudiService(this.databaseManager);
+            const initialized = await this.studiService.initialize();
+            
+            if (initialized) {
+                // Rendre le service accessible au client
+                this.client.studiService = this.studiService;
+                Logger.info('✅ Service anti-Studi initialisé');
+            } else {
+                Logger.warn('⚠️  Service Studi en mode dégradé');
+            }
+
+        } catch (error) {
+            Logger.error('Erreur lors de l\'initialisation du service Studi:', {
+                error: error.message
+            });
         }
     }
 
@@ -369,6 +399,12 @@ export class DiscordBot {
                 }
             }
 
+            // Arrêter le service Studi
+            if (this.studiService) {
+                Logger.info('🛡️ Arrêt du service anti-Studi...');
+                await this.studiService.shutdown();
+            }
+
             // Fermer la connexion base de données
             if (this.databaseManager) {
                 Logger.info('📊 Fermeture de la base de données...');
@@ -425,7 +461,8 @@ export class DiscordBot {
             database: this.databaseManager.getStats(),
             permissions: this.permissionManager.getStats(),
             middlewares: this.middlewareManager.getStats(),
-            errors: ErrorHandler.getStats()
+            errors: ErrorHandler.getStats(),
+            studi: this.studiService ? this.studiService.getStats() : null
         };
     }
 
@@ -459,7 +496,8 @@ export class DiscordBot {
             },
             services: {
                 reminderManager: !!this.reminderManager,
-                apiServer: !!this.apiServer
+                apiServer: !!this.apiServer,
+                studiService: !!this.studiService
             }
         };
     }
