@@ -3,7 +3,7 @@
  */
 
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType, PermissionsBitField } from 'discord.js';
-import * as db from '../../utils/db.js';
+// Utilise maintenant client.databaseManager
 import * as Logger from '../../utils/logger.js';
 
 // Créer la commande avec une syntaxe plus sûre
@@ -38,10 +38,10 @@ command.addStringOption(option => option
 );
 
 // Fonction pour vérifier si l'utilisateur est modérateur
-async function isModerator(userId) {
+async function isModerator(userId, databaseManager) {
     try {
         // Vérifier dans la table bot_moderators
-        const [moderators] = await db.query(
+        const moderators = await databaseManager.query(
             'SELECT user_id FROM bot_moderators WHERE user_id = ?',
             [userId]
         );
@@ -51,7 +51,7 @@ async function isModerator(userId) {
         }
         
         // Vérifier aussi dans la table bot_admins
-        const [admins] = await db.query(
+        const admins = await databaseManager.query(
             'SELECT user_id FROM bot_admins WHERE user_id = ?',
             [userId]
         );
@@ -71,6 +71,14 @@ export default {
     data: command,
     
     async execute(interaction) {
+        const databaseManager = interaction.client.databaseManager;
+        if (!databaseManager?.isAvailable()) {
+            return interaction.reply({
+                content: '❌ Base de données non disponible',
+                ephemeral: true
+            });
+        }
+
         try {
             // Vérifier si l'utilisateur est modérateur ou administrateur
             if (!(await isModerator(interaction.user.id))) {
@@ -93,7 +101,7 @@ export default {
             
             // Vérifier s'il existe déjà un projet avec ce nom
             try {
-                const [existingProjects] = await db.query(
+                const existingProjects = await databaseManager.query(
                     'SELECT * FROM projects WHERE name = ?',
                     [projectName]
                 );
@@ -137,7 +145,7 @@ export default {
             
             // Enregistrer le projet dans la base de données
             try {
-                const [result] = await db.query(
+                const result = await databaseManager.query(
                     'INSERT INTO projects (name, description, owner_id, start_date, due_date) VALUES (?, ?, ?, ?, ?)',
                     [
                         projectName,
@@ -151,7 +159,7 @@ export default {
                 const projectId = result.insertId;
                 
                 // Enregistrer les canaux associés au projet
-                await db.query(
+                await databaseManager.query(
                     'INSERT INTO project_channels (project_id, channel_id, channel_type) VALUES (?, ?, ?), (?, ?, ?)',
                     [
                         projectId, textChannel.id, 'general',

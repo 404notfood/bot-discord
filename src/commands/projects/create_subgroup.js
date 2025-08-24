@@ -3,7 +3,7 @@
  */
 
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType, PermissionsBitField } from 'discord.js';
-import * as db from '../../utils/db.js';
+// Utilise maintenant client.databaseManager
 import * as Logger from '../../utils/logger.js';
 import { AdminCommand } from '../../models/AdminCommand.js';
 
@@ -52,6 +52,14 @@ class CreateSubgroupCommand extends AdminCommand {
      * @param {Object} interaction - L'interaction Discord
      */
     async execute(interaction) {
+        const databaseManager = interaction.client.databaseManager;
+        if (!databaseManager?.isAvailable()) {
+            return interaction.reply({
+                content: '❌ Base de données non disponible',
+                ephemeral: true
+            });
+        }
+
         try {
             // Vérifier si l'utilisateur est modérateur ou administrateur
             if (!(await this.isModerator(interaction.user.id))) {
@@ -67,7 +75,7 @@ class CreateSubgroupCommand extends AdminCommand {
             // Trouver le projet parent
             let projectId, categoryId;
             try {
-                const [projects] = await db.query(
+                const projects = await databaseManager.query(
                     'SELECT p.id, pc.channel_id FROM projects p ' +
                     'LEFT JOIN project_channels pc ON p.id = pc.project_id ' +
                     'WHERE p.name = ? AND pc.channel_type = \'general\' ' +
@@ -82,7 +90,7 @@ class CreateSubgroupCommand extends AdminCommand {
                 projectId = projects[0].id;
                 
                 // Vérifier si un sous-groupe avec ce nom existe déjà dans ce projet
-                const [existingSubgroups] = await db.query(
+                const existingSubgroups = await databaseManager.query(
                     'SELECT * FROM subgroups WHERE project_id = ? AND name = ?',
                     [projectId, subgroupName]
                 );
@@ -92,7 +100,7 @@ class CreateSubgroupCommand extends AdminCommand {
                 }
                 
                 // Récupérer la catégorie du projet
-                const [channels] = await db.query(
+                const channels = await databaseManager.query(
                     'SELECT channel_id FROM project_channels WHERE project_id = ? AND channel_type = \'general\' LIMIT 1',
                     [projectId]
                 );
@@ -166,7 +174,7 @@ class CreateSubgroupCommand extends AdminCommand {
             // Enregistrer le sous-groupe dans la base de données
             try {
                 // Insérer le sous-groupe
-                const [subgroupResult] = await db.query(
+                const subgroupResult = await databaseManager.query(
                     'INSERT INTO subgroups (project_id, name, description, leader_id) VALUES (?, ?, ?, ?)',
                     [
                         projectId,
@@ -179,7 +187,7 @@ class CreateSubgroupCommand extends AdminCommand {
                 const subgroupId = subgroupResult.insertId;
                 
                 // Enregistrer les canaux associés au sous-groupe
-                await db.query(
+                await databaseManager.query(
                     'INSERT INTO project_channels (project_id, channel_id, channel_type) VALUES (?, ?, ?), (?, ?, ?)',
                     [
                         projectId, textChannel.id, 'subgroup',
@@ -188,7 +196,7 @@ class CreateSubgroupCommand extends AdminCommand {
                 );
                 
                 // Ajouter le responsable comme membre du sous-groupe
-                await db.query(
+                await databaseManager.query(
                     'INSERT INTO subgroup_members (subgroup_id, user_id, role) VALUES (?, ?, ?)',
                     [subgroupId, leader.id, 'leader']
                 );

@@ -1,6 +1,6 @@
 import { PermissionFlagsBits, EmbedBuilder, InteractionResponseFlags } from "discord.js";
 import { BaseCommand } from "../../models/BaseCommand.js";
-import studiService from "../../utils/StudiService.js";
+// Import supprimé - utilisera client.studiService
 import * as Logger from "../../utils/logger.js";
 
 class StudiBanAddCommand extends BaseCommand {
@@ -31,7 +31,22 @@ class StudiBanAddCommand extends BaseCommand {
         const reason = interaction.options.getString("reason");
         
         try {
-            if (studiService.isUserBanned(targetUser.id)) {
+            const studiService = interaction.client.studiService;
+            if (!studiService) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle("❌ Erreur")
+                            .setDescription("Service anti-Studi non disponible.")
+                            .setColor("#e74c3c")
+                            .setTimestamp()
+                    ],
+                    flags: [InteractionResponseFlags.Ephemeral]
+                });
+            }
+
+            const isAlreadyBanned = await studiService.isUserBanned(targetUser.id, interaction.guild.id);
+            if (isAlreadyBanned) {
                 return interaction.reply({
                     embeds: [
                         new EmbedBuilder()
@@ -44,16 +59,13 @@ class StudiBanAddCommand extends BaseCommand {
                 });
             }
             
-            const banInfo = {
-                userId: targetUser.id,
-                username: targetUser.username,
-                reason: reason,
-                bannedBy: interaction.user.id,
-                bannedByUsername: interaction.user.username,
-                bannedAt: new Date()
-            };
-            
-            studiService.addBannedUser(banInfo);
+            await studiService.banUser(
+                targetUser.id,
+                targetUser.username,
+                interaction.guild.id,
+                interaction.user.id,
+                reason
+            );
             
             const embed = new EmbedBuilder()
                 .setTitle("✅ Utilisateur banni")

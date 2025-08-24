@@ -3,7 +3,7 @@
  */
 
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
-import * as db from '../../utils/db.js';
+// Utilise maintenant client.databaseManager
 import * as Logger from '../../utils/logger.js';
 import { AdminCommand } from '../../models/AdminCommand.js';
 
@@ -54,6 +54,14 @@ class ListProjectsCommand extends AdminCommand {
      * @param {Object} interaction - L'interaction Discord
      */
     async execute(interaction) {
+        const databaseManager = interaction.client.databaseManager;
+        if (!databaseManager?.isAvailable()) {
+            return interaction.reply({
+                content: '❌ Base de données non disponible',
+                ephemeral: true
+            });
+        }
+
         try {
             // Vérifier si l'utilisateur est modérateur ou administrateur
             if (!(await this.isModerator(interaction.user.id))) {
@@ -90,7 +98,7 @@ class ListProjectsCommand extends AdminCommand {
             query += 'GROUP BY p.id ORDER BY p.created_at DESC';
             
             // Exécuter la requête
-            const [projects] = await db.query(query, queryParams);
+            const projects = await databaseManager.query(query, queryParams);
             
             if (projects.length === 0) {
                 const noProjectsEmbed = new EmbedBuilder()
@@ -116,7 +124,7 @@ class ListProjectsCommand extends AdminCommand {
                 const project = projects[i];
                 
                 // Rechercher les canaux associés au projet
-                const [channels] = await db.query(
+                const channels = await databaseManager.query(
                     'SELECT channel_id FROM project_channels WHERE project_id = ? AND channel_type = \'general\' LIMIT 2',
                     [project.id]
                 );

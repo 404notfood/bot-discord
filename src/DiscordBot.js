@@ -26,6 +26,8 @@ import { PermissionMiddleware } from './middleware/middlewares/PermissionMiddlew
 import ReminderManager from './utils/reminderManager.js';
 import ApiServer from './api/apiServer.js';
 import { EnhancedStudiService } from './services/EnhancedStudiService.js';
+import { DocumentationCacheService } from './services/DocumentationCacheService.js';
+import initScheduledTasks from './events/scheduleTasks.js';
 
 // Configuration ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -53,6 +55,8 @@ export class DiscordBot {
         this.reminderManager = null;
         this.apiServer = null;
         this.studiService = null;
+        this.scheduledTasksManager = null;
+        this.documentationCacheService = null;
 
         // État du bot
         this.isReady = false;
@@ -95,8 +99,9 @@ export class DiscordBot {
             // 6. Configurer les gestionnaires d'événements personnalisés
             this.setupCustomEventHandlers();
 
-            // 7. Initialiser le service Studi
+            // 7. Initialiser les services spécialisés
             await this.initializeStudiService();
+            await this.initializeDocumentationCache();
 
             Logger.info('✅ Initialisation terminée');
             return true;
@@ -162,6 +167,31 @@ export class DiscordBot {
 
         } catch (error) {
             Logger.error('Erreur lors de l\'initialisation du service Studi:', {
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Initialise le service de cache documentation
+     */
+    async initializeDocumentationCache() {
+        Logger.info('📚 Initialisation du cache documentation...');
+        
+        try {
+            this.documentationCacheService = new DocumentationCacheService(this.databaseManager);
+            const initialized = await this.documentationCacheService.initialize();
+            
+            if (initialized) {
+                // Rendre le service accessible au client
+                this.client.documentationCacheService = this.documentationCacheService;
+                Logger.info('✅ Cache documentation initialisé');
+            } else {
+                Logger.warn('⚠️  Cache documentation en mode dégradé');
+            }
+
+        } catch (error) {
+            Logger.error('Erreur lors de l\'initialisation du cache documentation:', {
                 error: error.message
             });
         }
@@ -277,6 +307,19 @@ export class DiscordBot {
             Logger.info('🌐 Initialisation du serveur API...');
             this.apiServer = new ApiServer(this.client, this.reminderManager);
             this.apiServer.start();
+
+            // Tâches planifiées
+            Logger.info('⏱️ Initialisation des tâches planifiées...');
+            this.scheduledTasksManager = initScheduledTasks(this.client);
+
+            // Définir le statut du bot
+            this.client.user.setPresence({
+                status: 'online',
+                activities: [{
+                    name: '/aide',
+                    type: 3 // "Watching"
+                }]
+            });
 
         } catch (error) {
             Logger.error('Erreur lors de l\'initialisation des services post-connexion:', {
@@ -405,6 +448,12 @@ export class DiscordBot {
                 await this.studiService.shutdown();
             }
 
+            // Arrêter le cache documentation
+            if (this.documentationCacheService) {
+                Logger.info('📚 Arrêt du cache documentation...');
+                await this.documentationCacheService.shutdown();
+            }
+
             // Fermer la connexion base de données
             if (this.databaseManager) {
                 Logger.info('📊 Fermeture de la base de données...');
@@ -462,7 +511,8 @@ export class DiscordBot {
             permissions: this.permissionManager.getStats(),
             middlewares: this.middlewareManager.getStats(),
             errors: ErrorHandler.getStats(),
-            studi: this.studiService ? this.studiService.getStats() : null
+            studi: this.studiService ? this.studiService.getStats() : null,
+            documentationCache: this.documentationCacheService ? this.documentationCacheService.getStats() : null
         };
     }
 
@@ -497,7 +547,8 @@ export class DiscordBot {
             services: {
                 reminderManager: !!this.reminderManager,
                 apiServer: !!this.apiServer,
-                studiService: !!this.studiService
+                studiService: !!this.studiService,
+                documentationCacheService: !!this.documentationCacheService
             }
         };
     }

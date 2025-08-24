@@ -1,6 +1,6 @@
 import { PermissionFlagsBits, EmbedBuilder, InteractionResponseFlags } from "discord.js";
 import { BaseCommand } from "../../models/BaseCommand.js";
-import studiService from "../../utils/StudiService.js";
+// Import supprimé - utilisera client.studiService
 import * as Logger from "../../utils/logger.js";
 
 class StudiBanRemoveCommand extends BaseCommand {
@@ -24,7 +24,22 @@ class StudiBanRemoveCommand extends BaseCommand {
         const targetUser = interaction.options.getUser("user");
         
         try {
-            if (!studiService.isUserBanned(targetUser.id)) {
+            const studiService = interaction.client.studiService;
+            if (!studiService) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle("❌ Erreur")
+                            .setDescription("Service anti-Studi non disponible.")
+                            .setColor("#e74c3c")
+                            .setTimestamp()
+                    ],
+                    flags: [InteractionResponseFlags.Ephemeral]
+                });
+            }
+
+            const isBanned = await studiService.isUserBanned(targetUser.id, interaction.guild.id);
+            if (!isBanned) {
                 return interaction.reply({
                     embeds: [
                         new EmbedBuilder()
@@ -37,7 +52,7 @@ class StudiBanRemoveCommand extends BaseCommand {
                 });
             }
             
-            studiService.removeBannedUser(targetUser.id);
+            await studiService.unbanUser(targetUser.id, interaction.guild.id);
             
             const embed = new EmbedBuilder()
                 .setTitle("✅ Utilisateur retiré")

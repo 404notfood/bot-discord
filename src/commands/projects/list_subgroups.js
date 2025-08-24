@@ -3,7 +3,7 @@
  */
 
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
-import * as db from '../../utils/db.js';
+// Utilise maintenant client.databaseManager
 import * as Logger from '../../utils/logger.js';
 import { AdminCommand } from '../../models/AdminCommand.js';
 
@@ -40,6 +40,14 @@ class ListSubgroupsCommand extends AdminCommand {
      * @param {Object} interaction - L'interaction Discord
      */
     async execute(interaction) {
+        const databaseManager = interaction.client.databaseManager;
+        if (!databaseManager?.isAvailable()) {
+            return interaction.reply({
+                content: '❌ Base de données non disponible',
+                ephemeral: true
+            });
+        }
+
         try {
             // Vérifier si l'utilisateur est modérateur ou administrateur
             if (!(await this.isModerator(interaction.user.id))) {
@@ -50,7 +58,7 @@ class ListSubgroupsCommand extends AdminCommand {
             const projectName = interaction.options.getString('projet');
             
             // Récupérer le projet
-            const [projects] = await db.query(
+            const projects = await databaseManager.query(
                 'SELECT * FROM projects WHERE name = ?',
                 [projectName]
             );
@@ -62,7 +70,7 @@ class ListSubgroupsCommand extends AdminCommand {
             const project = projects[0];
             
             // Récupérer les sous-groupes du projet
-            const [subgroups] = await db.query(
+            const subgroups = await databaseManager.query(
                 'SELECT s.*, ' +
                 '(SELECT COUNT(*) FROM subgroup_members sm WHERE sm.subgroup_id = s.id) as member_count, ' +
                 'u.username as leader_username ' +
@@ -96,7 +104,7 @@ class ListSubgroupsCommand extends AdminCommand {
             // Ajouter chaque sous-groupe à l'embed
             for (const subgroup of subgroups) {
                 // Rechercher les canaux associés au sous-groupe
-                const [channels] = await db.query(
+                const channels = await databaseManager.query(
                     'SELECT pc.channel_id, pc.channel_type ' +
                     'FROM project_channels pc ' +
                     'WHERE pc.project_id = ? AND pc.channel_type = \'subgroup\'',

@@ -4,7 +4,7 @@
 
 import { PermissionFlagsBits, EmbedBuilder, InteractionResponseFlags } from 'discord.js';
 import { BaseCommand } from '../../models/BaseCommand.js';
-import studiService from '../../utils/StudiService.js';
+// Import supprimé - utilisera client.studiService
 import * as Logger from '../../utils/logger.js';
 
 /**

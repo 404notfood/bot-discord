@@ -3,7 +3,7 @@
  */
 
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
-import * as db from '../../utils/db.js';
+// Utilise maintenant client.databaseManager
 import * as Logger from '../../utils/logger.js';
 import { AdminCommand } from '../../models/AdminCommand.js';
 
@@ -52,6 +52,14 @@ class RemoveFromSubgroupCommand extends AdminCommand {
      * @param {Object} interaction - L'interaction Discord
      */
     async execute(interaction) {
+        const databaseManager = interaction.client.databaseManager;
+        if (!databaseManager?.isAvailable()) {
+            return interaction.reply({
+                content: '❌ Base de données non disponible',
+                ephemeral: true
+            });
+        }
+
         try {
             // Vérifier si l'utilisateur est modérateur ou administrateur
             if (!(await this.isModerator(interaction.user.id))) {
@@ -67,7 +75,7 @@ class RemoveFromSubgroupCommand extends AdminCommand {
             let projectId, subgroupId, textChannelId, voiceChannelId;
             try {
                 // Récupérer le projet
-                const [projects] = await db.query(
+                const projects = await databaseManager.query(
                     'SELECT id FROM projects WHERE name = ?',
                     [projectName]
                 );
@@ -79,7 +87,7 @@ class RemoveFromSubgroupCommand extends AdminCommand {
                 projectId = projects[0].id;
                 
                 // Récupérer le sous-groupe
-                const [subgroups] = await db.query(
+                const subgroups = await databaseManager.query(
                     'SELECT id FROM subgroups WHERE project_id = ? AND name = ?',
                     [projectId, subgroupName]
                 );
@@ -91,7 +99,7 @@ class RemoveFromSubgroupCommand extends AdminCommand {
                 subgroupId = subgroups[0].id;
                 
                 // Vérifier si le membre est dans le sous-groupe
-                const [existingMembers] = await db.query(
+                const existingMembers = await databaseManager.query(
                     'SELECT * FROM subgroup_members WHERE subgroup_id = ? AND user_id = ?',
                     [subgroupId, member.id]
                 );
@@ -101,7 +109,7 @@ class RemoveFromSubgroupCommand extends AdminCommand {
                 }
                 
                 // Vérifier si le membre est le responsable du sous-groupe
-                const [subgroupInfo] = await db.query(
+                const subgroupInfo = await databaseManager.query(
                     'SELECT leader_id FROM subgroups WHERE id = ?',
                     [subgroupId]
                 );
@@ -133,7 +141,7 @@ class RemoveFromSubgroupCommand extends AdminCommand {
                 
                 // Si les canaux n'ont pas été trouvés par nom, essayer de les trouver dans la base de données
                 if (!textChannelId || !voiceChannelId) {
-                    const [channels] = await db.query(
+                    const channels = await databaseManager.query(
                         'SELECT channel_id, channel_type FROM project_channels ' +
                         'WHERE project_id = ? AND channel_type = \'subgroup\'',
                         [projectId]
@@ -169,7 +177,7 @@ class RemoveFromSubgroupCommand extends AdminCommand {
             // Retirer l'utilisateur du sous-groupe
             try {
                 // Supprimer le membre de la base de données
-                await db.query(
+                await databaseManager.query(
                     'DELETE FROM subgroup_members WHERE subgroup_id = ? AND user_id = ?',
                     [subgroupId, member.id]
                 );

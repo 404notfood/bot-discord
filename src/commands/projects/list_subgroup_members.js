@@ -3,7 +3,7 @@
  */
 
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
-import * as db from '../../utils/db.js';
+// Utilise maintenant client.databaseManager
 import * as Logger from '../../utils/logger.js';
 import { AdminCommand } from '../../models/AdminCommand.js';
 
@@ -46,6 +46,14 @@ class ListSubgroupMembersCommand extends AdminCommand {
      * @param {Object} interaction - L'interaction Discord
      */
     async execute(interaction) {
+        const databaseManager = interaction.client.databaseManager;
+        if (!databaseManager?.isAvailable()) {
+            return interaction.reply({
+                content: '❌ Base de données non disponible',
+                ephemeral: true
+            });
+        }
+
         try {
             // Vérifier si l'utilisateur est modérateur ou administrateur
             if (!(await this.isModerator(interaction.user.id))) {
@@ -57,7 +65,7 @@ class ListSubgroupMembersCommand extends AdminCommand {
             const subgroupName = interaction.options.getString('sous_groupe');
             
             // Récupérer le projet
-            const [projects] = await db.query(
+            const projects = await databaseManager.query(
                 'SELECT * FROM projects WHERE name = ?',
                 [projectName]
             );
@@ -69,7 +77,7 @@ class ListSubgroupMembersCommand extends AdminCommand {
             const project = projects[0];
             
             // Récupérer le sous-groupe
-            const [subgroups] = await db.query(
+            const subgroups = await databaseManager.query(
                 'SELECT * FROM subgroups WHERE project_id = ? AND name = ?',
                 [project.id, subgroupName]
             );
@@ -81,7 +89,7 @@ class ListSubgroupMembersCommand extends AdminCommand {
             const subgroup = subgroups[0];
             
             // Récupérer les membres du sous-groupe
-            const [members] = await db.query(
+            const members = await databaseManager.query(
                 'SELECT sm.*, u.username ' +
                 'FROM subgroup_members sm ' +
                 'LEFT JOIN users u ON sm.user_id = u.id ' +

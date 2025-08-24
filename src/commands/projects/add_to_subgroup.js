@@ -3,7 +3,7 @@
  */
 
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, PermissionsBitField } from 'discord.js';
-import * as db from '../../utils/db.js';
+// Utilise maintenant client.databaseManager
 import * as Logger from '../../utils/logger.js';
 
 // Créer la commande
@@ -47,7 +47,7 @@ command.addStringOption(option => option
 async function isModerator(userId) {
     try {
         // Vérifier dans la table bot_moderators
-        const [moderators] = await db.query(
+        const moderators = await databaseManager.query(
             'SELECT user_id FROM bot_moderators WHERE user_id = ?',
             [userId]
         );
@@ -57,7 +57,7 @@ async function isModerator(userId) {
         }
         
         // Vérifier aussi dans la table bot_admins
-        const [admins] = await db.query(
+        const admins = await databaseManager.query(
             'SELECT user_id FROM bot_admins WHERE user_id = ?',
             [userId]
         );
@@ -94,6 +94,14 @@ export default {
     data: command,
     
     async execute(interaction) {
+        const databaseManager = interaction.client.databaseManager;
+        if (!databaseManager?.isAvailable()) {
+            return interaction.reply({
+                content: '❌ Base de données non disponible',
+                ephemeral: true
+            });
+        }
+
         try {
             // Vérifier si l'utilisateur est modérateur ou administrateur
             if (!(await isModerator(interaction.user.id))) {
@@ -110,7 +118,7 @@ export default {
             let projectId, subgroupId, textChannelId, voiceChannelId;
             try {
                 // Récupérer le projet
-                const [projects] = await db.query(
+                const projects = await databaseManager.query(
                     'SELECT id FROM projects WHERE name = ?',
                     [projectName]
                 );
@@ -122,7 +130,7 @@ export default {
                 projectId = projects[0].id;
                 
                 // Récupérer le sous-groupe
-                const [subgroups] = await db.query(
+                const subgroups = await databaseManager.query(
                     'SELECT id FROM subgroups WHERE project_id = ? AND name = ?',
                     [projectId, subgroupName]
                 );
@@ -134,7 +142,7 @@ export default {
                 subgroupId = subgroups[0].id;
                 
                 // Vérifier si le membre est déjà dans le sous-groupe
-                const [existingMembers] = await db.query(
+                const existingMembers = await databaseManager.query(
                     'SELECT * FROM subgroup_members WHERE subgroup_id = ? AND user_id = ?',
                     [subgroupId, member.id]
                 );
@@ -145,7 +153,7 @@ export default {
                 
                 try {
                     // Récupérer les canaux du sous-groupe
-                    const [channels] = await db.query(
+                    const channels = await databaseManager.query(
                         'SELECT pc.channel_id, c.type FROM project_channels pc ' +
                         'JOIN channels c ON pc.channel_id = c.id ' +
                         'WHERE pc.project_id = ? AND pc.channel_type = \'subgroup\' ' +
@@ -207,7 +215,7 @@ export default {
             // Ajouter l'utilisateur au sous-groupe
             try {
                 // Insérer le membre dans la base de données
-                await db.query(
+                await databaseManager.query(
                     'INSERT INTO subgroup_members (subgroup_id, user_id, role) VALUES (?, ?, ?)',
                     [subgroupId, member.id, role]
                 );
