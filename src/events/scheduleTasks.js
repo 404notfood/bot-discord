@@ -336,12 +336,25 @@ Merci de vous assurer que toutes les tâches sont terminées à temps.
 }
 
 /**
- * Initialise les tâches planifiées
- * @param {Client} client - Le client Discord
- * @returns {ScheduledTasksManager} Instance du gestionnaire de tâches
+ * Événement pour l'initialisation des tâches planifiées
  */
-export default function(client) {
-  const tasksManager = new ScheduledTasksManager(client);
-  tasksManager.init();
-  return tasksManager;
-} 
+class ScheduleTasksEvent {
+  constructor() {
+    this.name = 'ready';
+    this.once = true;
+  }
+
+  /**
+   * Exécute l'initialisation des tâches planifiées
+   * @param {Client} client - Le client Discord
+   */
+  async execute(client) {
+    const tasksManager = new ScheduledTasksManager(client);
+    tasksManager.init();
+    
+    // Attacher le gestionnaire au client pour référence future
+    client.tasksManager = tasksManager;
+  }
+}
+
+export default new ScheduleTasksEvent(); 

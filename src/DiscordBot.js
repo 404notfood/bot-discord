@@ -242,13 +242,27 @@ export class DiscordBot {
         Logger.info('🔧 Configuration des middlewares...');
         
         // Ordre d'exécution important : plus petit priority = exécuté en premier
-        this.middlewareManager.use(LoggingMiddleware, 10);        // Log d'abord
-        this.middlewareManager.use(ValidationMiddleware, 20);     // Valider ensuite  
-        this.middlewareManager.use(RateLimitMiddleware, 30);      // Rate limit après validation
+        this.middlewareManager.use({
+            name: 'logging',
+            execute: LoggingMiddleware.execute.bind(LoggingMiddleware)
+        }, 10);        // Log d'abord
+        
+        this.middlewareManager.use({
+            name: 'validation',
+            execute: ValidationMiddleware.execute.bind(ValidationMiddleware)
+        }, 20);     // Valider ensuite  
+        
+        this.middlewareManager.use({
+            name: 'rateLimit',
+            execute: RateLimitMiddleware.execute.bind(RateLimitMiddleware)
+        }, 30);      // Rate limit après validation
         
         // Initialiser et ajouter le middleware de permissions
         PermissionMiddleware.initialize(this.permissionManager);
-        this.middlewareManager.use(PermissionMiddleware, 40);     // Permissions en dernier
+        this.middlewareManager.use({
+            name: 'permissions',
+            execute: PermissionMiddleware.execute.bind(PermissionMiddleware)
+        }, 40);     // Permissions en dernier
 
         Logger.info('✅ Middlewares configurés');
     }
@@ -323,7 +337,7 @@ export class DiscordBot {
         });
 
         // Gestionnaire de ready personnalisé
-        this.client.once('ready', async () => {
+        this.client.once('clientReady', async () => {
             this.isReady = true;
             this.startTime = new Date();
             

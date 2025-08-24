@@ -36,7 +36,16 @@ export class EnhancedStudiService {
         };
 
         // Statistiques en temps réel
-        this.dailyStats = new Map();
+        this.dailyStats = {
+            messagesDeleted: 0,
+            warningsSent: 0,
+            timeoutsApplied: 0,
+            kicksExecuted: 0,
+            bansExecuted: 0,
+            whitelistBypasses: 0,
+            uniqueOffenders: new Set()
+        };
+
         this.resetDailyStatsAtMidnight();
     }
 

@@ -110,7 +110,7 @@ export class DatabaseManager {
             this.stats.lastQuery = new Date();
             
             // Exécuter la requête via le module db
-            const result = await DatabaseUtils.executeQuery(sql, params);
+            const [result] = await DatabaseUtils.query(sql, params);
             
             const duration = Date.now() - startTime;
             
@@ -151,7 +151,7 @@ export class DatabaseManager {
      */
     async insert(table, data) {
         try {
-            return await DatabaseUtils.insertData(table, data);
+            return await DatabaseUtils.insert(table, data);
         } catch (error) {
             Logger.error(`DatabaseManager: Erreur insertion dans ${table}:`, {
                 error: error.message,
@@ -170,7 +170,7 @@ export class DatabaseManager {
      */
     async update(table, data, id) {
         try {
-            return await DatabaseUtils.updateData(table, data, id);
+            return await DatabaseUtils.update(table, data, 'id = ?', [id]);
         } catch (error) {
             Logger.error(`DatabaseManager: Erreur mise à jour dans ${table}:`, {
                 error: error.message,
@@ -189,7 +189,7 @@ export class DatabaseManager {
      */
     async delete(table, id) {
         try {
-            return await DatabaseUtils.deleteData(table, id);
+            return await DatabaseUtils.remove(table, 'id = ?', [id]);
         } catch (error) {
             Logger.error(`DatabaseManager: Erreur suppression dans ${table}:`, {
                 error: error.message,

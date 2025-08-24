@@ -15,8 +15,8 @@ return [
     // Configuration de la base de données
     'database' => [
         'host'     => $_ENV['DB_HOST_PHP'] ?? 'localhost',
-        'dbname'   => $_ENV['DB_NAME_PHP'] ?? 'laurent_bot',
-        'username' => $_ENV['DB_USER_PHP'] ?? 'laurent_bot',
+        'dbname'   => $_ENV['DB_NAME_PHP'] ?? 'discord_bot',
+        'username' => $_ENV['DB_USER_PHP'] ?? 'discord_bot',
         'password' => $_ENV['DB_PASSWORD_PHP'] ?? '',
         'charset'  => 'utf8mb4',
     ],
@@ -28,7 +28,7 @@ return [
         'debug'       => filter_var($_ENV['APP_DEBUG'] ?? true, FILTER_VALIDATE_BOOLEAN),
         'locale'      => 'fr',
         'timezone'    => 'Europe/Paris',
-        'base_url'    => $_ENV['APP_URL'] ?? 'http://localhost',
+        'base_url'    => $_ENV['APP_URL'] ?? 'https://bot.rtfm2win.ovh',
     ],
     
     // Configuration des chemins

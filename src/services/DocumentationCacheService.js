@@ -130,7 +130,7 @@ export class DocumentationCacheService {
             // Récupérer les langages depuis la colonne language
             const languageRows = await this.databaseManager.query(`
                 SELECT DISTINCT language 
-                FROM resources 
+                FROM doc_resources 
                 WHERE language IS NOT NULL AND is_active = 1
             `);
             
@@ -139,7 +139,7 @@ export class DocumentationCacheService {
             // Récupérer les langages depuis les noms des ressources
             const nameRows = await this.databaseManager.query(`
                 SELECT name 
-                FROM resources 
+                FROM doc_resources 
                 WHERE is_active = 1
             `);
             
@@ -187,7 +187,7 @@ export class DocumentationCacheService {
         try {
             const resources = await this.databaseManager.query(`
                 SELECT id, name, description, url, language, search_url, tutorial_url
-                FROM resources 
+                FROM doc_resources 
                 WHERE is_active = 1
                 ORDER BY name
             `);

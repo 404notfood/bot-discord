@@ -136,12 +136,12 @@ INSERT IGNORE INTO studi_offenders_enhanced
 (user_id, username, guild_id, offense_count, last_offense_at, first_offense_at, total_messages_deleted)
 SELECT 
     user_id, 
-    username, 
-    COALESCE(guild_id, 'unknown') as guild_id,
+    CONCAT('user_', user_id) as username, 
+    COALESCE(guild_id, '1258751748538105877') as guild_id,
     offense_count,
     last_offense_at,
-    first_offense_at,
-    COALESCE(messages_deleted, 0) as messages_deleted
+    last_offense_at as first_offense_at,
+    0 as messages_deleted
 FROM studi_offenders
 WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'studi_offenders');
 
@@ -156,5 +156,5 @@ SET
 WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'studi_banned_users');
 
 -- Créer des index pour optimiser les performances
-CREATE INDEX IF NOT EXISTS idx_studi_user_guild_date ON studi_moderation_logs (user_id, guild_id, DATE(created_at));
-CREATE INDEX IF NOT EXISTS idx_studi_action_date ON studi_moderation_logs (action_type, DATE(created_at));
+CREATE INDEX IF NOT EXISTS idx_studi_user_guild_date ON studi_moderation_logs (user_id, guild_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_studi_action_date ON studi_moderation_logs (action_type, created_at);

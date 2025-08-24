@@ -74,8 +74,8 @@ export default {
       embed.setFooter({ text: 'Utilisez /aide pour voir cette liste à tout moment' })
         .setTimestamp();
       
-      // Envoyer la réponse (l'interaction est déjà différée par le gestionnaire)
-      await interaction.editReply({ embeds: [embed] });
+      // Envoyer la réponse
+      await interaction.reply({ embeds: [embed] });
       
       // Journaliser l'action
       Logger.info('Commande aide exécutée', {
@@ -92,12 +92,16 @@ export default {
         userId: interaction.user.id
       });
       
-      // L'interaction est déjà différée à ce stade
+      // Répondre avec l'erreur
       try {
-        await interaction.editReply({ content: 'Une erreur est survenue lors de l\'affichage de l\'aide.' });
-      } catch (editError) {
-        Logger.error('Impossible de modifier la réponse', {
-          error: editError.message,
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({ content: 'Une erreur est survenue lors de l\'affichage de l\'aide.', ephemeral: true });
+        } else {
+          await interaction.reply({ content: 'Une erreur est survenue lors de l\'affichage de l\'aide.', ephemeral: true });
+        }
+      } catch (replyError) {
+        Logger.error('Impossible de répondre à l\'interaction', {
+          error: replyError.message,
           userId: interaction.user.id
         });
       }

@@ -2,7 +2,7 @@
  * Service de webhooks pour envoyer des données en temps réel au dashboard PHP
  */
 
-import fetch from 'node-fetch';
+// Utiliser fetch natif de Node.js 18+
 import * as Logger from '../utils/logger.js';
 
 export class WebhookService {

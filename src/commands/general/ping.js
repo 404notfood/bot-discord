@@ -16,8 +16,8 @@ export default {
       // Calculer la latence
       const latency = Date.now() - interaction.createdTimestamp;
       
-      // La réponse est déjà différée par le gestionnaire d'événements
-      await interaction.editReply(`Pong! Latence: ${latency}ms`);
+      // Répondre directement à l'interaction
+      await interaction.reply(`Pong! Latence: ${latency}ms`);
       
       Logger.debug('Commande ping exécutée', {
         userId: interaction.user.id,
@@ -29,12 +29,16 @@ export default {
         error: error.message
       });
       
-      // L'interaction est déjà différée à ce stade
+      // Gérer l'erreur de réponse
       try {
-        await interaction.editReply({ content: 'Une erreur est survenue.' });
-      } catch (editError) {
-        Logger.error('Impossible de modifier la réponse', {
-          error: editError.message
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({ content: 'Une erreur est survenue.', ephemeral: true });
+        } else {
+          await interaction.reply({ content: 'Une erreur est survenue.', ephemeral: true });
+        }
+      } catch (replyError) {
+        Logger.error('Impossible de répondre à l\'interaction', {
+          error: replyError.message
         });
       }
     }

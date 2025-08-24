@@ -239,7 +239,7 @@ async function afficherToutesCategories(interaction, isPublic, user) {
  * @param {string} searchTerm - Le terme de recherche (optionnel)
  * @returns {Promise<Array>} - Les résultats de la recherche
  */
-async function rechercherDocumentation(language, searchTerm) {
+async function rechercherDocumentation(interaction, language, searchTerm) {
     const resultats = [];
     const cachePath = join(__dirname, '../../cache');
     
@@ -295,7 +295,7 @@ async function rechercherDocumentation(language, searchTerm) {
             paramsCount: params.length
         });
         
-        const [rows] = await db.query(query, params);
+        const rows = await interaction.client.databaseManager.query(query, params);
         
         Logger.info(`${rows ? rows.length : 0} résultats trouvés dans la base de données`, {
             language,
@@ -680,13 +680,16 @@ export default {
                 options: JSON.stringify(interaction.options._hoistedOptions)
             });
             
+            // Déférer la réponse pour avoir plus de temps
+            await interaction.deferReply({ ephemeral: !isPublic });
+            
             // Si aucun langage n'est spécifié, afficher toutes les catégories
             if (!language) {
                 return await afficherToutesCategories(interaction, isPublic, user);
             }
             
             // Rechercher la documentation
-            const resultats = await rechercherDocumentation(language, searchTerm);
+            const resultats = await rechercherDocumentation(interaction, language, searchTerm);
             
             if (resultats.length === 0) {
                 await interaction.editReply({

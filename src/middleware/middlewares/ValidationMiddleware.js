@@ -132,8 +132,8 @@ export class ValidationMiddleware {
             }
         }
 
-        // Stocker la commande dans le contexte pour les autres middlewares
-        context.data.set('command', command);
+        // Note: La commande sera stockée dans le contexte par le MiddlewareManager
+        // après validation réussie
 
         return true;
     }
