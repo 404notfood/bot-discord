@@ -5,9 +5,28 @@
 
 // Charger les variables d'environnement
 if (file_exists(__DIR__ . '/../.env')) {
-    $env = parse_ini_file(__DIR__ . '/../.env');
-    foreach ($env as $key => $value) {
-        $_ENV[$key] = $value;
+    $envContent = file_get_contents(__DIR__ . '/../.env');
+    $lines = explode("\n", $envContent);
+    
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0) {
+            continue;
+        }
+        
+        $parts = explode('=', $line, 2);
+        if (count($parts) === 2) {
+            $key = trim($parts[0]);
+            $value = trim($parts[1]);
+            
+            // Supprimer les guillemets autour de la valeur
+            if ((strpos($value, '"') === 0 && strrpos($value, '"') === strlen($value) - 1) ||
+                (strpos($value, "'") === 0 && strrpos($value, "'") === strlen($value) - 1)) {
+                $value = substr($value, 1, -1);
+            }
+            
+            $_ENV[$key] = $value;
+        }
     }
 }
 

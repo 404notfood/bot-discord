@@ -30,7 +30,7 @@ import { DocumentationCacheService } from './services/DocumentationCacheService.
 import { MonitoringService } from './services/MonitoringService.js';
 import { PerformanceOptimizer } from './services/PerformanceOptimizer.js';
 import { getWebhookService } from './services/WebhookService.js';
-import initScheduledTasks from './events/scheduleTasks.js';
+
 
 // Configuration ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -53,6 +53,9 @@ export class DiscordBot {
         this.databaseManager = new DatabaseManager();
         this.permissionManager = new PermissionManager(this.databaseManager);
         this.middlewareManager = new MiddlewareManager();
+        
+        // Attacher les managers au client pour que les commandes puissent y accéder
+        this.client.databaseManager = this.databaseManager;
 
         // Services optionnels
         this.reminderManager = null;
@@ -388,9 +391,8 @@ export class DiscordBot {
             this.apiServer = new ApiServer(this.client, this.reminderManager);
             this.apiServer.start();
 
-            // Tâches planifiées
+            // Les tâches planifiées sont maintenant initialisées via l'événement scheduleTasks.js
             Logger.info('⏱️ Initialisation des tâches planifiées...');
-            this.scheduledTasksManager = initScheduledTasks(this.client);
 
             // Définir le statut du bot
             this.client.user.setPresence({

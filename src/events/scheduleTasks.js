@@ -340,7 +340,7 @@ Merci de vous assurer que toutes les tâches sont terminées à temps.
  */
 class ScheduleTasksEvent {
   constructor() {
-    this.name = 'ready';
+    this.name = 'clientReady';
     this.once = true;
   }
 

@@ -233,6 +233,24 @@ class GuildEventsHandler {
     }
 }
 
-// Exporter une instance de la classe pour l'utiliser ailleurs
-const guildEvents = new GuildEventsHandler();
-export default guildEvents; 
+/**
+ * Événement pour l'initialisation des événements de serveur
+ */
+class GuildEventsEvent {
+    constructor() {
+        this.name = 'clientReady';
+        this.once = true;
+    }
+
+    /**
+     * Exécute l'initialisation des événements de serveur
+     * @param {Client} client - Le client Discord
+     */
+    async execute(client) {
+        const handler = new GuildEventsHandler();
+        handler.registerEvents(client);
+        Logger.info('Événements de serveur initialisés');
+    }
+}
+
+export default new GuildEventsEvent(); 

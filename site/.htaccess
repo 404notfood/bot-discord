@@ -24,8 +24,18 @@ ErrorDocument 404 /index.php
     SetEnv TZ Europe/Paris
 </IfModule>
 
-# Protéger le fichier .htaccess
+# Protéger les fichiers sensibles
 <Files .htaccess>
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files .env>
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files composer.json>
     Order allow,deny
     Deny from all
 </Files>
