@@ -1,0 +1,60 @@
+{
+    "name": "taureau-celtique/dashboard",
+    "description": "Dashboard PHP pour la gestion du bot Discord Taureau Celtique",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Taureau Celtique Team"
+        }
+    ],
+    "require": {
+        "php": ">=8.3.0",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-json": "*",
+        "ext-curl": "*",
+        "ext-mbstring": "*",
+        "monolog/monolog": "^3.9",
+        "vlucas/phpdotenv": "^5.6",
+        "symfony/http-foundation": "^7.2",
+        "guzzlehttp/guzzle": "^7.9",
+        "twig/twig": "^3.19"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "squizlabs/php_codesniffer": "^3.7",
+        "phpstan/phpstan": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Controllers\\": "Controllers/",
+            "Models\\": "Models/",
+            "Core\\": "Core/",
+            "App\\": "App/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "cs-fix": "phpcbf --standard=PSR12 Controllers/ Models/ Core/",
+        "cs-check": "phpcs --standard=PSR12 Controllers/ Models/ Core/",
+        "analyse": "phpstan analyse Controllers/ Models/ Core/ --level=8",
+        "post-install-cmd": [
+            "@php -r \"copy('.env.example', '.env');\""
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

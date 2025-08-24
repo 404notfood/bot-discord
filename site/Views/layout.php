@@ -22,6 +22,11 @@
                         <a class="nav-link <?= $currentPage === 'dashboard' ? 'active' : '' ?>" href="/dashboard">Accueil</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link <?= $currentPage === 'monitoring' ? 'active' : '' ?>" href="/dashboard/monitoring">
+                            <i class="bi bi-activity"></i> Monitoring
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link <?= $currentPage === 'users' ? 'active' : '' ?>" href="/dashboard/users">Utilisateurs</a>
                     </li>
                     <li class="nav-item">
@@ -56,7 +61,15 @@
                     </li>
                     <?php endif; ?>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center">
+                    <!-- Toggle Mode Sombre -->
+                    <label class="theme-toggle me-3">
+                        <i class="bi bi-sun theme-icon"></i>
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="theme-slider"></span>
+                        <i class="bi bi-moon theme-icon"></i>
+                    </label>
+                    
                     <span class="navbar-text me-3">
                         <i class="bi bi-person-circle"></i> <?= htmlspecialchars($username ?? 'Utilisateur') ?> (<?= htmlspecialchars($role ?? 'invité') ?>)
                     </span>

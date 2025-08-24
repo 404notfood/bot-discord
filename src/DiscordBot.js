@@ -29,6 +29,7 @@ import { EnhancedStudiService } from './services/EnhancedStudiService.js';
 import { DocumentationCacheService } from './services/DocumentationCacheService.js';
 import { MonitoringService } from './services/MonitoringService.js';
 import { PerformanceOptimizer } from './services/PerformanceOptimizer.js';
+import { getWebhookService } from './services/WebhookService.js';
 import initScheduledTasks from './events/scheduleTasks.js';
 
 // Configuration ES modules
@@ -61,6 +62,7 @@ export class DiscordBot {
         this.documentationCacheService = null;
         this.monitoringService = null;
         this.performanceOptimizer = null;
+        this.webhookService = null;
 
         // État du bot
         this.isReady = false;
@@ -107,6 +109,7 @@ export class DiscordBot {
             await this.initializeStudiService();
             await this.initializeDocumentationCache();
             await this.initializeMonitoring();
+            this.initializeWebhooks();
 
             Logger.info('✅ Initialisation terminée');
             return true;
@@ -339,6 +342,12 @@ export class DiscordBot {
             if (this.monitoringService) {
                 this.performanceOptimizer = new PerformanceOptimizer(this.client, this.monitoringService);
                 await this.performanceOptimizer.start();
+            }
+
+            // Notifier le démarrage via webhooks
+            if (this.webhookService) {
+                await this.webhookService.notifyBotStarted(this.client);
+                this.webhookService.startPeriodicMetrics(this.client);
             }
         });
 
@@ -621,8 +630,25 @@ export class DiscordBot {
                 studiService: !!this.studiService,
                 documentationCacheService: !!this.documentationCacheService,
                 monitoringService: !!this.monitoringService,
-                performanceOptimizer: !!this.performanceOptimizer
+                performanceOptimizer: !!this.performanceOptimizer,
+                webhookService: !!this.webhookService
             }
         };
+    }
+
+    /**
+     * Initialise le service de webhooks
+     */
+    initializeWebhooks() {
+        try {
+            Logger.info('🔗 Initialisation du service de webhooks...');
+            this.webhookService = getWebhookService();
+            this.client.webhookService = this.webhookService;
+            Logger.info('✅ Service de webhooks initialisé');
+        } catch (error) {
+            Logger.warn('⚠️ Erreur initialisation webhooks (non critique):', {
+                error: error.message
+            });
+        }
     }
 }

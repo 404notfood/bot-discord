@@ -278,4 +278,169 @@ class DiscordService extends Model
         curl_close($ch);
         return json_decode($response, true);
     }
+    
+    /**
+     * Obtenir le statut du bot Discord
+     */
+    public function getBotStatus(): array
+    {
+        try {
+            // Essayer de contacter l'API du bot local
+            $response = $this->sendBotRequest('status', []);
+            
+            if ($response && isset($response['status'])) {
+                return [
+                    'status' => $response['status'],
+                    'latency' => $response['latency'] ?? null,
+                    'guilds' => $response['guilds'] ?? 0,
+                    'users' => $response['users'] ?? 0,
+                    'channels' => $response['channels'] ?? 0,
+                    'uptime' => $response['uptime'] ?? null
+                ];
+            }
+            
+            // Fallback : vérifier via l'API Discord directement
+            return $this->checkBotStatusDirectly();
+            
+        } catch (\Exception $e) {
+            error_log("[DiscordService] Erreur statut bot: " . $e->getMessage());
+            return ['status' => 'unknown', 'error' => $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Vérifier le statut du bot via l'API Discord
+     */
+    private function checkBotStatusDirectly(): array
+    {
+        try {
+            // Obtenir les informations de l'application
+            $botInfo = $this->sendRequest('applications/@me', 'GET');
+            
+            if ($botInfo) {
+                // Le bot répond, il est donc en ligne
+                return [
+                    'status' => 'online',
+                    'bot_info' => [
+                        'name' => $botInfo['name'] ?? 'Bot Discord',
+                        'id' => $botInfo['id'] ?? null,
+                        'public' => $botInfo['bot_public'] ?? false
+                    ]
+                ];
+            }
+            
+            return ['status' => 'offline'];
+            
+        } catch (\Exception $e) {
+            return ['status' => 'error', 'message' => $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Obtenir les serveurs du bot
+     */
+    public function getBotGuilds(): array
+    {
+        try {
+            $guilds = $this->sendRequest('users/@me/guilds', 'GET');
+            return $guilds ?: [];
+        } catch (\Exception $e) {
+            error_log("[DiscordService] Erreur récupération serveurs: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtenir les informations d'un serveur
+     */
+    public function getGuildInfo(string $guildId): array|false
+    {
+        try {
+            return $this->sendRequest("guilds/{$guildId}", 'GET');
+        } catch (\Exception $e) {
+            error_log("[DiscordService] Erreur info serveur: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Obtenir les canaux d'un serveur
+     */
+    public function getGuildChannels(string $guildId): array
+    {
+        try {
+            $channels = $this->sendRequest("guilds/{$guildId}/channels", 'GET');
+            return $channels ?: [];
+        } catch (\Exception $e) {
+            error_log("[DiscordService] Erreur canaux serveur: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtenir les membres d'un serveur
+     */
+    public function getGuildMembers(string $guildId, int $limit = 100): array
+    {
+        try {
+            $members = $this->sendRequest("guilds/{$guildId}/members?limit={$limit}", 'GET');
+            return $members ?: [];
+        } catch (\Exception $e) {
+            error_log("[DiscordService] Erreur membres serveur: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Envoyer un message dans un canal
+     */
+    public function sendMessage(string $channelId, string $content, array $options = []): array|false
+    {
+        try {
+            $data = array_merge([
+                'content' => $content
+            ], $options);
+            
+            return $this->sendRequest("channels/{$channelId}/messages", 'POST', $data);
+        } catch (\Exception $e) {
+            error_log("[DiscordService] Erreur envoi message: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Tester la connexion au bot
+     */
+    public function testBotConnection(): array
+    {
+        $results = [
+            'discord_api' => false,
+            'bot_api' => false,
+            'bot_status' => 'unknown',
+            'errors' => []
+        ];
+        
+        try {
+            // Test API Discord
+            $botInfo = $this->sendRequest('applications/@me', 'GET');
+            if ($botInfo) {
+                $results['discord_api'] = true;
+            }
+        } catch (\Exception $e) {
+            $results['errors'][] = 'API Discord: ' . $e->getMessage();
+        }
+        
+        try {
+            // Test API Bot local
+            $status = $this->sendBotRequest('ping', []);
+            if ($status) {
+                $results['bot_api'] = true;
+                $results['bot_status'] = $status['status'] ?? 'unknown';
+            }
+        } catch (\Exception $e) {
+            $results['errors'][] = 'API Bot: ' . $e->getMessage();
+        }
+        
+        return $results;
+    }
 }

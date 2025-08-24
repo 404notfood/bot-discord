@@ -51,8 +51,15 @@ $router->addRoute('logout', ['controller' => 'Auth', 'action' => 'logout']);
 
 // Routes du dashboard
 $router->addRoute('dashboard', ['controller' => 'Dashboard', 'action' => 'index']);
+$router->addRoute('dashboard/monitoring', ['controller' => 'Dashboard', 'action' => 'monitoring']);
 $router->addRoute('dashboard/users', ['controller' => 'Dashboard', 'action' => 'users']);
 $router->addRoute('dashboard/user/:id', ['controller' => 'Dashboard', 'action' => 'userDetails']);
+
+// Routes API pour le monitoring
+$router->addRoute('api/bot-status', ['controller' => 'Api', 'action' => 'getBotStatus']);
+$router->addRoute('api/live-stats', ['controller' => 'Api', 'action' => 'getLiveStats']);
+$router->addRoute('api/metrics', ['controller' => 'Api', 'action' => 'getMetrics']);
+$router->addRoute('api/discord-webhook', ['controller' => 'Api', 'action' => 'discordWebhook']);
 
 // Routes pour les ressources
 $router->addRoute('resources', ['controller' => 'Resource', 'action' => 'index']);

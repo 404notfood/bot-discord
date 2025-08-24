@@ -277,4 +277,20 @@ class DashboardController extends Controller
             echo "<p style='color:red;'>Erreur lors du chargement de la configuration: " . $e->getMessage() . "</p>";
         }
     }
+    
+    /**
+     * Page de monitoring temps réel
+     */
+    public function monitoringAction()
+    {
+        // Vérifier si l'utilisateur a les droits
+        if (!$this->authController->hasRole('viewer')) {
+            $this->redirect('/dashboard');
+        }
+        
+        $this->render('dashboard/monitoring', [
+            'username' => $_SESSION['member_username'],
+            'role' => $_SESSION['member_role']
+        ]);
+    }
 } 

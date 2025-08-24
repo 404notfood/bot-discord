@@ -13,9 +13,11 @@ Un tableau de bord en PHP pour visualiser et gérer les données d'un bot Discor
 
 ## Prérequis
 
-- PHP 7.4 ou supérieur
-- MySQL 5.7 ou supérieur
-- Serveur web (Apache, Nginx, etc.)
+- **PHP 8.3 ou supérieur** (recommandé PHP 8.4 pour la sécurité)
+- **MySQL 8.0 ou supérieur** (ou MariaDB 10.6+)
+- **Serveur web** (Apache 2.4+, Nginx 1.20+)
+- **Node.js 22.12.0+** (pour intégration avec le bot Discord)
+- **Composer** pour la gestion des dépendances PHP
 
 ## Installation
 
