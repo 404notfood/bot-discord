@@ -13,12 +13,14 @@ import { ErrorHandler } from './utils/ErrorHandler.js';
 import { CommandManager } from './managers/CommandManager.js';
 import { EventManager } from './managers/EventManager.js';
 import { DatabaseManager } from './managers/DatabaseManager.js';
+import { PermissionManager } from './managers/PermissionManager.js';
 import { MiddlewareManager } from './middleware/MiddlewareManager.js';
 
 // Middlewares de base
 import { LoggingMiddleware } from './middleware/middlewares/LoggingMiddleware.js';
 import { RateLimitMiddleware } from './middleware/middlewares/RateLimitMiddleware.js';
 import { ValidationMiddleware } from './middleware/middlewares/ValidationMiddleware.js';
+import { PermissionMiddleware } from './middleware/middlewares/PermissionMiddleware.js';
 
 // Autres services
 import ReminderManager from './utils/reminderManager.js';
@@ -43,6 +45,7 @@ export class DiscordBot {
         this.commandManager = new CommandManager(this.client);
         this.eventManager = new EventManager(this.client);
         this.databaseManager = new DatabaseManager();
+        this.permissionManager = new PermissionManager(this.databaseManager);
         this.middlewareManager = new MiddlewareManager();
 
         // Services optionnels
@@ -77,14 +80,17 @@ export class DiscordBot {
             // 2. Initialiser la base de données
             await this.initializeDatabase();
 
-            // 3. Configurer les middlewares
+            // 3. Initialiser le gestionnaire de permissions
+            await this.initializePermissions();
+
+            // 4. Configurer les middlewares
             this.configureMiddlewares();
 
-            // 4. Charger les commandes et événements
+            // 5. Charger les commandes et événements
             await this.loadCommands();
             await this.loadEvents();
 
-            // 5. Configurer les gestionnaires d'événements personnalisés
+            // 6. Configurer les gestionnaires d'événements personnalisés
             this.setupCustomEventHandlers();
 
             Logger.info('✅ Initialisation terminée');
@@ -115,6 +121,23 @@ export class DiscordBot {
     }
 
     /**
+     * Initialise le gestionnaire de permissions
+     */
+    async initializePermissions() {
+        Logger.info('🔐 Initialisation des permissions...');
+        
+        const permissionsInitialized = await this.permissionManager.initialize();
+        
+        if (permissionsInitialized) {
+            // Rendre le gestionnaire accessible au client
+            this.client.permissionManager = this.permissionManager;
+            Logger.info('✅ Gestionnaire de permissions initialisé');
+        } else {
+            Logger.warn('⚠️  Permissions en mode dégradé');
+        }
+    }
+
+    /**
      * Configure les middlewares par défaut
      */
     configureMiddlewares() {
@@ -124,6 +147,10 @@ export class DiscordBot {
         this.middlewareManager.use(LoggingMiddleware, 10);        // Log d'abord
         this.middlewareManager.use(ValidationMiddleware, 20);     // Valider ensuite  
         this.middlewareManager.use(RateLimitMiddleware, 30);      // Rate limit après validation
+        
+        // Initialiser et ajouter le middleware de permissions
+        PermissionMiddleware.initialize(this.permissionManager);
+        this.middlewareManager.use(PermissionMiddleware, 40);     // Permissions en dernier
 
         Logger.info('✅ Middlewares configurés');
     }
@@ -396,6 +423,7 @@ export class DiscordBot {
             commands: this.commandManager.getStats(),
             events: this.eventManager.getStats(),
             database: this.databaseManager.getStats(),
+            permissions: this.permissionManager.getStats(),
             middlewares: this.middlewareManager.getStats(),
             errors: ErrorHandler.getStats()
         };
