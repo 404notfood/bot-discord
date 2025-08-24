@@ -23,14 +23,24 @@ npm start
 npm run deploy
 
 # Deploy commands globally (takes up to 1 hour to propagate)
-npm run deploy:commands
+npm run deploy:global
+
+# Deploy specific command categories
+npm run deploy:admin
+npm run deploy:db
 ```
 
-### Command Deployment Variants
-- `node src/deploy-commands.js` - Standard deployment (guild if GUILD_ID set, global otherwise)
-- `node src/deploy-commands-admin.js` - Deploy only admin commands
-- `node src/deploy-commands-fix.js` - Deploy commands with bug fixes
-- `node src/deploy-db-commands.js` - Deploy database-related commands
+### Advanced Deployment Options
+```bash
+# Deploy specific category
+node src/deploy.js --category general
+
+# Deploy globally with specific category
+node src/deploy.js --global --admin
+
+# Show help
+node src/deploy.js --help
+```
 
 ### Web Dashboard
 The PHP dashboard requires a web server (Apache/Nginx) and MySQL database. Access via browser after configuring `site/Config/config.php`.
