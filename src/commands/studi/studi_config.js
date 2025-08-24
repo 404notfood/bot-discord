@@ -2,7 +2,7 @@
  * Commande pour configurer le système anti-Studi
  */
 
-import { PermissionFlagsBits, EmbedBuilder, InteractionResponseFlags } from 'discord.js';
+import { PermissionFlagsBits, EmbedBuilder } from 'discord.js';
 import { BaseCommand } from '../../models/BaseCommand.js';
 // Import supprimé - utilisera client.studiService
 import * as Logger from '../../utils/logger.js';
@@ -128,7 +128,7 @@ export class StudiConfigCommand extends BaseCommand {
                                 .setColor('#e74c3c')
                                 .setTimestamp()
                         ],
-                        flags: [InteractionResponseFlags.Ephemeral]
+                        ephemeral: true
                     });
                 } catch (replyError) {
                     Logger.error('Erreur lors de la réponse à l\'interaction:', {
@@ -192,7 +192,7 @@ export class StudiConfigCommand extends BaseCommand {
                                 .setColor('#e74c3c')
                                 .setTimestamp()
                         ],
-                        flags: [InteractionResponseFlags.Ephemeral]
+                        ephemeral: true
                     });
                 } catch (replyError) {
                     Logger.error('Erreur lors de la réponse à l\'interaction:', {

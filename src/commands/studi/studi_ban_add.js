@@ -1,4 +1,4 @@
-import { PermissionFlagsBits, EmbedBuilder, InteractionResponseFlags } from "discord.js";
+import { PermissionFlagsBits, EmbedBuilder } from "discord.js";
 import { BaseCommand } from "../../models/BaseCommand.js";
 // Import supprimé - utilisera client.studiService
 import * as Logger from "../../utils/logger.js";
@@ -41,7 +41,7 @@ class StudiBanAddCommand extends BaseCommand {
                             .setColor("#e74c3c")
                             .setTimestamp()
                     ],
-                    flags: [InteractionResponseFlags.Ephemeral]
+                    ephemeral: true
                 });
             }
 
@@ -55,7 +55,7 @@ class StudiBanAddCommand extends BaseCommand {
                             .setColor("#f1c40f")
                             .setTimestamp()
                     ],
-                    flags: [InteractionResponseFlags.Ephemeral]
+                    ephemeral: true
                 });
             }
             
@@ -117,7 +117,7 @@ class StudiBanAddCommand extends BaseCommand {
                                 .setColor("#e74c3c")
                                 .setTimestamp()
                         ],
-                        flags: [InteractionResponseFlags.Ephemeral]
+                        ephemeral: true
                     });
                 } catch (replyError) {
                     Logger.error("Erreur lors de la réponse à l'interaction", {

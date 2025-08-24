@@ -16,14 +16,14 @@ const missingEnvVars = [];
 
 // Avertir si des variables d'environnement essentielles sont manquantes
 if (missingEnvVars.length > 0) {
-  console.warn(`⚠️ Variables d'environnement manquantes: ${missingEnvVars.join(', ')}`);
-  console.warn('Vérifiez votre fichier .env ou les variables d\'environnement du système');
+  Logger.warn(`Variables d'environnement manquantes: ${missingEnvVars.join(', ')}`);
+  Logger.warn('Vérifiez votre fichier .env ou les variables d\'environnement du système');
 }
 
 // Vérifier les variables de la base de données
 const dbConfigMissing = !process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_NAME;
 if (dbConfigMissing) {
-  console.warn('⚠️ Configuration de base de données incomplète. Le bot fonctionnera en mode limité.');
+  Logger.warn('Configuration de base de données incomplète. Le bot fonctionnera en mode limité.');
 }
 
 /**

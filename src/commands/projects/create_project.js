@@ -116,7 +116,7 @@ export default {
                 });
             }
 
-            // Créer la catégorie pour le projet
+            // Créer la catégorie pour le projet avec permissions modernes
             const category = await guild.channels.create({
                 name: `📂 ${projectName}`,
                 type: ChannelType.GuildCategory,
@@ -124,23 +124,104 @@ export default {
                     {
                         id: guild.roles.everyone.id,
                         allow: [PermissionsBitField.Flags.ViewChannel],
+                        deny: []
+                    },
+                    {
+                        id: interaction.user.id, // Chef de projet
+                        allow: [
+                            PermissionsBitField.Flags.ViewChannel,
+                            PermissionsBitField.Flags.ManageChannels,
+                            PermissionsBitField.Flags.ManageMessages
+                        ]
                     }
                 ]
             });
             
-            // Créer le salon texte
+            // Créer le salon texte principal
             const textChannel = await guild.channels.create({
                 name: `📝-${projectName.toLowerCase().replace(/\s+/g, '-')}`,
                 type: ChannelType.GuildText,
                 parent: category.id,
-                topic: description
+                topic: description,
+                permissionOverwrites: [
+                    {
+                        id: guild.roles.everyone.id,
+                        allow: [
+                            PermissionsBitField.Flags.ViewChannel,
+                            PermissionsBitField.Flags.SendMessages,
+                            PermissionsBitField.Flags.ReadMessageHistory
+                        ]
+                    },
+                    {
+                        id: interaction.user.id,
+                        allow: [
+                            PermissionsBitField.Flags.ViewChannel,
+                            PermissionsBitField.Flags.SendMessages,
+                            PermissionsBitField.Flags.ManageMessages,
+                            PermissionsBitField.Flags.PinMessages
+                        ]
+                    }
+                ]
             });
             
-            // Créer le salon vocal
+            // Créer le salon vocal avec limites et qualité
             const voiceChannel = await guild.channels.create({
                 name: `🔊 ${projectName}`,
                 type: ChannelType.GuildVoice,
-                parent: category.id
+                parent: category.id,
+                userLimit: 10, // Limite de 10 utilisateurs
+                bitrate: 64000, // 64kbps de qualité
+                permissionOverwrites: [
+                    {
+                        id: guild.roles.everyone.id,
+                        allow: [
+                            PermissionsBitField.Flags.ViewChannel,
+                            PermissionsBitField.Flags.Connect,
+                            PermissionsBitField.Flags.Speak,
+                            PermissionsBitField.Flags.UseVAD
+                        ]
+                    },
+                    {
+                        id: interaction.user.id,
+                        allow: [
+                            PermissionsBitField.Flags.ViewChannel,
+                            PermissionsBitField.Flags.Connect,
+                            PermissionsBitField.Flags.Speak,
+                            PermissionsBitField.Flags.MoveMembers,
+                            PermissionsBitField.Flags.MuteMembers,
+                            PermissionsBitField.Flags.DeafenMembers
+                        ]
+                    }
+                ]
+            });
+
+            // Créer un salon d'annonces (optionnel)
+            const announcementChannel = await guild.channels.create({
+                name: `📢-annonces-${projectName.toLowerCase().replace(/\s+/g, '-')}`,
+                type: ChannelType.GuildText,
+                parent: category.id,
+                topic: `Annonces importantes pour le projet ${projectName}`,
+                permissionOverwrites: [
+                    {
+                        id: guild.roles.everyone.id,
+                        allow: [
+                            PermissionsBitField.Flags.ViewChannel,
+                            PermissionsBitField.Flags.ReadMessageHistory
+                        ],
+                        deny: [
+                            PermissionsBitField.Flags.SendMessages
+                        ]
+                    },
+                    {
+                        id: interaction.user.id,
+                        allow: [
+                            PermissionsBitField.Flags.ViewChannel,
+                            PermissionsBitField.Flags.SendMessages,
+                            PermissionsBitField.Flags.ManageMessages,
+                            PermissionsBitField.Flags.PinMessages
+                        ]
+                    }
+                ]
             });
             
             // Enregistrer le projet dans la base de données
@@ -158,12 +239,13 @@ export default {
                 
                 const projectId = result.insertId;
                 
-                // Enregistrer les canaux associés au projet
+                // Enregistrer les canaux associés au projet (inclut le canal d'annonces)
                 await databaseManager.query(
-                    'INSERT INTO project_channels (project_id, channel_id, channel_type) VALUES (?, ?, ?), (?, ?, ?)',
+                    'INSERT INTO project_channels (project_id, channel_id, channel_type) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?)',
                     [
                         projectId, textChannel.id, 'general',
-                        projectId, voiceChannel.id, 'general'
+                        projectId, voiceChannel.id, 'voice',
+                        projectId, announcementChannel.id, 'announcements'
                     ]
                 );
                 
@@ -174,8 +256,9 @@ export default {
                     .setColor('#2ecc71')
                     .addFields(
                         { name: 'Description', value: description, inline: false },
-                        { name: 'Salon Texte', value: `<#${textChannel.id}>`, inline: true },
-                        { name: 'Salon Vocal', value: `<#${voiceChannel.id}>`, inline: true }
+                        { name: '📝 Salon Principal', value: `<#${textChannel.id}>`, inline: true },
+                        { name: '🔊 Salon Vocal', value: `<#${voiceChannel.id}>`, inline: true },
+                        { name: '📢 Annonces', value: `<#${announcementChannel.id}>`, inline: true }
                     )
                     .setTimestamp()
                     .setFooter({ text: `Créé par ${interaction.user.tag}` });

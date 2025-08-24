@@ -116,7 +116,7 @@ Structured logging with multiple levels via `utils/logger.js`:
 ## Development Notes
 
 - **ES Modules**: Project uses `"type": "module"` - use import/export syntax
-- **Node.js 20+**: Required for compatibility
+- **Node.js 22.12.0+**: Required for compatibility with latest Discord.js v14.22.1
 - **French Language**: Primary language for user-facing text and documentation
 - **Error Handling**: Comprehensive error handling with graceful degradation
 - **Security**: Prepared statements for SQL, password hashing, input validation
