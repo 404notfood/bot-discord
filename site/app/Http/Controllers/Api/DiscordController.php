@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\BotConfig;
 use App\Models\DashboardMember;
 use App\Models\BannedUser;
+use App\Models\BotAdmin;
+use App\Models\BotModerator;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class DiscordController extends Controller
 {
@@ -304,6 +307,369 @@ class DiscordController extends Controller
                 'error' => 'Unable to process message delete',
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Liste des administrateurs du bot
+     */
+    public function botAdmins(Request $request)
+    {
+        try {
+            $admins = BotAdmin::orderBy('added_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $admins
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to fetch bot admins',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Ajouter un administrateur du bot
+     */
+    public function addBotAdmin(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|string|max:50|unique:bot_admins,user_id',
+            'username' => 'required|string|max:100',
+            'added_by' => 'required|string|max:50'
+        ]);
+
+        try {
+            $admin = BotAdmin::create($validated);
+
+            // Synchroniser avec dashboard_members si l'utilisateur existe
+            $member = DashboardMember::where('discord_id', $validated['user_id'])->first();
+            if ($member) {
+                $member->update([
+                    'role' => 'admin',
+                    'is_active' => true,
+                    'permissions' => ['bot_admin', 'dashboard_access', 'manage_users']
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $admin,
+                'message' => 'Administrateur ajouté avec succès'
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to add bot admin',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Retirer un administrateur du bot
+     */
+    public function removeBotAdmin(Request $request, $userId)
+    {
+        try {
+            $admin = BotAdmin::where('user_id', $userId)->firstOrFail();
+            $admin->delete();
+
+            // Mettre à jour dashboard_members
+            $member = DashboardMember::where('discord_id', $userId)->first();
+            if ($member) {
+                $member->update([
+                    'role' => 'member',
+                    'permissions' => ['dashboard_access']
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Administrateur retiré avec succès'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to remove bot admin',
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Liste des modérateurs du bot
+     */
+    public function botModerators(Request $request)
+    {
+        try {
+            $moderators = BotModerator::orderBy('added_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $moderators
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to fetch bot moderators',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Ajouter un modérateur du bot
+     */
+    public function addBotModerator(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|string|max:50|unique:bot_moderators,user_id',
+            'username' => 'required|string|max:100',
+            'added_by' => 'required|string|max:50'
+        ]);
+
+        try {
+            $moderator = BotModerator::create($validated);
+
+            // Synchroniser avec dashboard_members si l'utilisateur existe
+            $member = DashboardMember::where('discord_id', $validated['user_id'])->first();
+            if ($member) {
+                $member->update([
+                    'role' => 'moderator',
+                    'is_active' => true,
+                    'permissions' => ['bot_moderator', 'dashboard_access', 'moderate_users']
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $moderator,
+                'message' => 'Modérateur ajouté avec succès'
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to add bot moderator',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Retirer un modérateur du bot
+     */
+    public function removeBotModerator(Request $request, $userId)
+    {
+        try {
+            $moderator = BotModerator::where('user_id', $userId)->firstOrFail();
+            $moderator->delete();
+
+            // Mettre à jour dashboard_members
+            $member = DashboardMember::where('discord_id', $userId)->first();
+            if ($member) {
+                $member->update([
+                    'role' => 'member',
+                    'permissions' => ['dashboard_access']
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Modérateur retiré avec succès'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to remove bot moderator',
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Synchroniser les utilisateurs entre le site et le bot
+     */
+    public function syncUsers(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $syncStats = [
+                'admins_synced' => 0,
+                'moderators_synced' => 0,
+                'members_updated' => 0
+            ];
+
+            // Synchroniser les admins
+            $dashboardAdmins = DashboardMember::where('role', 'admin')
+                ->where('is_active', true)
+                ->whereNotNull('discord_id')
+                ->get();
+
+            foreach ($dashboardAdmins as $member) {
+                $existing = BotAdmin::where('user_id', $member->discord_id)->first();
+                if (!$existing) {
+                    BotAdmin::create([
+                        'user_id' => $member->discord_id,
+                        'username' => $member->username,
+                        'added_by' => 'system_sync'
+                    ]);
+                    $syncStats['admins_synced']++;
+                }
+            }
+
+            // Synchroniser les modérateurs
+            $dashboardModerators = DashboardMember::where('role', 'moderator')
+                ->where('is_active', true)
+                ->whereNotNull('discord_id')
+                ->get();
+
+            foreach ($dashboardModerators as $member) {
+                $existing = BotModerator::where('user_id', $member->discord_id)->first();
+                if (!$existing) {
+                    BotModerator::create([
+                        'user_id' => $member->discord_id,
+                        'username' => $member->username,
+                        'added_by' => 'system_sync'
+                    ]);
+                    $syncStats['moderators_synced']++;
+                }
+            }
+
+            // Synchroniser dans l'autre sens - ajouter les bot admins/mods au dashboard
+            $botAdmins = BotAdmin::all();
+            foreach ($botAdmins as $admin) {
+                $member = DashboardMember::where('discord_id', $admin->user_id)->first();
+                if ($member) {
+                    if ($member->role !== 'admin') {
+                        $member->update([
+                            'role' => 'admin',
+                            'permissions' => ['bot_admin', 'dashboard_access', 'manage_users']
+                        ]);
+                        $syncStats['members_updated']++;
+                    }
+                } else {
+                    // Créer un membre dashboard pour cet admin
+                    DashboardMember::create([
+                        'discord_id' => $admin->user_id,
+                        'username' => $admin->username,
+                        'role' => 'admin',
+                        'is_active' => true,
+                        'permissions' => ['bot_admin', 'dashboard_access', 'manage_users'],
+                        'guild_id' => null // À remplir lors de la prochaine connexion
+                    ]);
+                    $syncStats['members_updated']++;
+                }
+            }
+
+            $botModerators = BotModerator::all();
+            foreach ($botModerators as $moderator) {
+                $member = DashboardMember::where('discord_id', $moderator->user_id)->first();
+                if ($member) {
+                    if ($member->role !== 'moderator') {
+                        $member->update([
+                            'role' => 'moderator',
+                            'permissions' => ['bot_moderator', 'dashboard_access', 'moderate_users']
+                        ]);
+                        $syncStats['members_updated']++;
+                    }
+                } else {
+                    // Créer un membre dashboard pour ce modérateur
+                    DashboardMember::create([
+                        'discord_id' => $moderator->user_id,
+                        'username' => $moderator->username,
+                        'role' => 'moderator',
+                        'is_active' => true,
+                        'permissions' => ['bot_moderator', 'dashboard_access', 'moderate_users'],
+                        'guild_id' => null // À remplir lors de la prochaine connexion
+                    ]);
+                    $syncStats['members_updated']++;
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => $syncStats,
+                'message' => 'Synchronisation terminée avec succès'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to sync users',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtenir les statistiques de synchronisation
+     */
+    public function syncStats(Request $request)
+    {
+        try {
+            $stats = [
+                'dashboard_members' => DashboardMember::count(),
+                'active_members' => DashboardMember::where('is_active', true)->count(),
+                'bot_admins' => BotAdmin::count(),
+                'bot_moderators' => BotModerator::count(),
+                'banned_users' => BannedUser::where('is_active', true)->count(),
+                'roles' => [
+                    'admin' => DashboardMember::where('role', 'admin')->count(),
+                    'moderator' => DashboardMember::where('role', 'moderator')->count(),
+                    'member' => DashboardMember::where('role', 'member')->count()
+                ],
+                'last_sync' => BotConfig::getValue('system.last_user_sync', 'Jamais'),
+                'needs_sync' => $this->checkSyncNeeded()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to fetch sync stats',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Vérifier si une synchronisation est nécessaire
+     */
+    private function checkSyncNeeded()
+    {
+        try {
+            // Vérifier si des admins du dashboard ne sont pas dans bot_admins
+            $dashboardAdmins = DashboardMember::where('role', 'admin')
+                ->where('is_active', true)
+                ->whereNotNull('discord_id')
+                ->pluck('discord_id');
+
+            $botAdmins = BotAdmin::pluck('user_id');
+            $missingAdmins = $dashboardAdmins->diff($botAdmins);
+
+            // Vérifier si des modérateurs du dashboard ne sont pas dans bot_moderators
+            $dashboardModerators = DashboardMember::where('role', 'moderator')
+                ->where('is_active', true)
+                ->whereNotNull('discord_id')
+                ->pluck('discord_id');
+
+            $botModerators = BotModerator::pluck('user_id');
+            $missingModerators = $dashboardModerators->diff($botModerators);
+
+            return $missingAdmins->count() > 0 || $missingModerators->count() > 0;
+        } catch (\Exception $e) {
+            return false;
         }
     }
 }

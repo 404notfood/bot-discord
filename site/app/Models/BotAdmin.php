@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\Carbon;
 
 class BotAdmin extends Model
 {
@@ -24,6 +25,28 @@ class BotAdmin extends Model
     ];
 
     public $timestamps = false;
+
+    /**
+     * Boot du modèle pour gérer les timestamps manuellement
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->added_at)) {
+                $model->added_at = Carbon::now();
+            }
+        });
+    }
+
+    /**
+     * Relation avec le membre du dashboard
+     */
+    public function dashboardMember()
+    {
+        return $this->hasOne(DashboardMember::class, 'discord_id', 'user_id');
+    }
 
     /**
      * Relation avec les logs de modération créés par cet admin
@@ -51,10 +74,45 @@ class BotAdmin extends Model
     }
 
     /**
-     * Scope pour les admins actifs (tous les admins sont actifs)
+     * Scope pour les admins actifs
      */
     public function scopeActive($query)
     {
-        return $query; // Tous les admins sont considérés comme actifs
+        return $query->whereHas('dashboardMember', function ($q) {
+            $q->where('is_active', true);
+        });
+    }
+
+    /**
+     * Scope pour rechercher par nom d'utilisateur
+     */
+    public function scopeByUsername($query, $username)
+    {
+        return $query->where('username', 'like', '%' . $username . '%');
+    }
+
+    /**
+     * Vérifier si l'admin est actif
+     */
+    public function isActive()
+    {
+        $dashboardMember = $this->dashboardMember;
+        return $dashboardMember && $dashboardMember->is_active;
+    }
+
+    /**
+     * Obtenir la date d'ajout formatée
+     */
+    public function getAddedAtFormattedAttribute()
+    {
+        return $this->added_at ? $this->added_at->format('d/m/Y H:i') : 'N/A';
+    }
+
+    /**
+     * Obtenir le statut de l'admin
+     */
+    public function getStatusAttribute()
+    {
+        return $this->isActive() ? 'active' : 'inactive';
     }
 }

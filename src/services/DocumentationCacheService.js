@@ -47,9 +47,13 @@ export class DocumentationCacheService {
      * S'assure que le dossier cache existe
      */
     ensureCacheDirectory() {
-        if (!fs.existsSync(this.cacheDir)) {
-            fs.mkdirSync(this.cacheDir, { recursive: true });
-            Logger.info('Dossier cache créé:', this.cacheDir);
+        try {
+            if (!fs.existsSync(this.cacheDir)) {
+                fs.mkdirSync(this.cacheDir, { recursive: true });
+                Logger.info('Dossier cache créé:', this.cacheDir);
+            }
+        } catch (error) {
+            Logger.error('Erreur création dossier cache:', { error: error.message });
         }
     }
 

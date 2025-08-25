@@ -51,6 +51,26 @@ Route::middleware(['throttle:api'])->group(function () {
             Route::delete('/{id}/ban', [DiscordController::class, 'unbanMember']);
         });
         
+        // Administrateurs du bot
+        Route::prefix('bot-admins')->group(function () {
+            Route::get('/', [DiscordController::class, 'botAdmins']);
+            Route::post('/', [DiscordController::class, 'addBotAdmin']);
+            Route::delete('/{userId}', [DiscordController::class, 'removeBotAdmin']);
+        });
+        
+        // Modérateurs du bot  
+        Route::prefix('bot-moderators')->group(function () {
+            Route::get('/', [DiscordController::class, 'botModerators']);
+            Route::post('/', [DiscordController::class, 'addBotModerator']);
+            Route::delete('/{userId}', [DiscordController::class, 'removeBotModerator']);
+        });
+        
+        // Synchronisation des utilisateurs
+        Route::prefix('sync')->group(function () {
+            Route::post('/users', [DiscordController::class, 'syncUsers']);
+            Route::get('/stats', [DiscordController::class, 'syncStats']);
+        });
+        
         // Projets
         Route::prefix('projects')->group(function () {
             Route::get('/', [ProjectsApiController::class, 'index']);

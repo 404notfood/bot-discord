@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         
         $middleware->alias([
-            'auth.api.token' => \App\Http\Middleware\ApiTokenAuth::class,
+            'auth.api.token' => \App\Http\Middleware\AuthenticateApiToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
