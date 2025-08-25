@@ -41,8 +41,19 @@ export class AddModeratorCommand extends BaseCommand {
             const username = targetUser.username;
             const userId = targetUser.id;
 
+            // Vérifier la base de données
+            if (!interaction.client.databaseManager || !interaction.client.databaseManager.isAvailable()) {
+                const embed = new EmbedBuilder()
+                    .setTitle('❌ Base de données non disponible')
+                    .setDescription('Impossible d\\'ajouter des modérateurs. La base de données n\\'est pas accessible.')
+                    .setColor('#e74c3c')
+                    .setTimestamp();
+                
+                return await interaction.editReply({ embeds: [embed] });
+            }
+
             // Vérifier si l'utilisateur est déjà modérateur
-            if (await this.isModerator(userId)) {
+            if (await this.isModerator(userId, interaction.client)) {
                 const embed = new EmbedBuilder()
                     .setTitle('⚠️ Utilisateur déjà modérateur')
                     .setDescription(`${username} est déjà modérateur du bot.`)
@@ -53,7 +64,7 @@ export class AddModeratorCommand extends BaseCommand {
             }
             
             // Vérifier si l'utilisateur est déjà administrateur
-            if (await this.isAdmin(userId)) {
+            if (await this.isAdmin(userId, interaction.client)) {
                 const embed = new EmbedBuilder()
                     .setTitle('ℹ️ Information')
                     .setDescription(`${username} est déjà administrateur du bot. Les administrateurs ont déjà tous les droits de modération.`)
@@ -64,7 +75,7 @@ export class AddModeratorCommand extends BaseCommand {
             }
 
             // Ajouter le modérateur
-            const success = await this.addModerator(userId, username, interaction.user.id);
+            const success = await this.addModerator(userId, username, interaction.user.id, interaction.client);
             
             if (success) {
                 // Créer un embed pour afficher la confirmation
@@ -152,9 +163,23 @@ export class AddModeratorCommand extends BaseCommand {
      * @param {string} userId - ID de l'utilisateur
      * @returns {Promise<boolean>} - True si l'utilisateur est modérateur
      */
-    async isModerator(userId) {
-        // Implémentation à compléter selon votre système de base de données
-        return false;
+    async isModerator(userId, client) {
+        const databaseManager = client?.databaseManager;
+        
+        if (!databaseManager || !databaseManager.isAvailable()) {
+            return false;
+        }
+        
+        try {
+            const result = await databaseManager.query(
+                'SELECT * FROM bot_moderators WHERE user_id = ?',
+                [userId]
+            );
+            return result.length > 0;
+        } catch (error) {
+            Logger.error('Erreur vérification modérateur:', { error: error.message, userId });
+            return false;
+        }
     }
 
     /**
@@ -162,9 +187,23 @@ export class AddModeratorCommand extends BaseCommand {
      * @param {string} userId - ID de l'utilisateur
      * @returns {Promise<boolean>} - True si l'utilisateur est admin
      */
-    async isAdmin(userId) {
-        // Implémentation à compléter selon votre système de base de données
-        return false;
+    async isAdmin(userId, client) {
+        const databaseManager = client?.databaseManager;
+        
+        if (!databaseManager || !databaseManager.isAvailable()) {
+            return false;
+        }
+        
+        try {
+            const result = await databaseManager.query(
+                'SELECT * FROM bot_admins WHERE user_id = ?',
+                [userId]
+            );
+            return result.length > 0;
+        } catch (error) {
+            Logger.error('Erreur vérification admin:', { error: error.message, userId });
+            return false;
+        }
     }
 
     /**
@@ -174,9 +213,23 @@ export class AddModeratorCommand extends BaseCommand {
      * @param {string} addedBy - ID de la personne qui ajoute
      * @returns {Promise<boolean>} - True si l'ajout est réussi
      */
-    async addModerator(userId, username, addedBy) {
-        // Implémentation à compléter selon votre système de base de données
-        return true;
+    async addModerator(userId, username, addedBy, client) {
+        const databaseManager = client?.databaseManager;
+        
+        if (!databaseManager || !databaseManager.isAvailable()) {
+            return false;
+        }
+        
+        try {
+            await databaseManager.query(
+                'INSERT INTO bot_moderators (user_id, username, added_by) VALUES (?, ?, ?)',
+                [userId, username, addedBy]
+            );
+            return true;
+        } catch (error) {
+            Logger.error('Erreur ajout modérateur:', { error: error.message, userId });
+            return false;
+        }
     }
 }
 

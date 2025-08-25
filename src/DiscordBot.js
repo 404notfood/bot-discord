@@ -247,24 +247,24 @@ export class DiscordBot {
         // Ordre d'exécution important : plus petit priority = exécuté en premier
         this.middlewareManager.use({
             name: 'logging',
-            execute: LoggingMiddleware.execute.bind(LoggingMiddleware)
+            execute: (context) => LoggingMiddleware.execute(context)
         }, 10);        // Log d'abord
         
         this.middlewareManager.use({
             name: 'validation',
-            execute: ValidationMiddleware.execute.bind(ValidationMiddleware)
+            execute: (context) => ValidationMiddleware.execute(context)
         }, 20);     // Valider ensuite  
         
         this.middlewareManager.use({
             name: 'rateLimit',
-            execute: RateLimitMiddleware.execute.bind(RateLimitMiddleware)
+            execute: (context) => RateLimitMiddleware.execute(context)
         }, 30);      // Rate limit après validation
         
         // Initialiser et ajouter le middleware de permissions
         PermissionMiddleware.initialize(this.permissionManager);
         this.middlewareManager.use({
             name: 'permissions',
-            execute: PermissionMiddleware.execute.bind(PermissionMiddleware)
+            execute: (context) => PermissionMiddleware.execute(context)
         }, 40);     // Permissions en dernier
 
         Logger.info('✅ Middlewares configurés');
