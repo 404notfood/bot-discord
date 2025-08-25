@@ -33,6 +33,19 @@ Route::get('/test-models', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     
+    // Futuristic Dashboard Routes
+    Route::get('control-center', function () {
+        return inertia('dashboard-futuristic');
+    })->name('control-center');
+    
+    Route::get('bot-management', function () {
+        return inertia('bot-management');
+    })->name('bot-management');
+    
+    Route::get('studi-defense', function () {
+        return inertia('studi-defense');
+    })->name('studi-defense');
+    
     // Routes pour la gestion des membres
     Route::get('members', [App\Http\Controllers\MembersController::class, 'index'])->name('members.index');
     Route::get('members/{id}', [App\Http\Controllers\MembersController::class, 'show'])->name('members.show');

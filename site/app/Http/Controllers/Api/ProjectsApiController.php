@@ -253,4 +253,285 @@ class ProjectsApiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Liste tous les sous-groupes (global)
+     */
+    public function listSubgroups(Request $request)
+    {
+        try {
+            $query = ProjectSubgroup::with(['project:id,name', 'members'])->orderBy('created_at', 'desc');
+
+            if ($request->has('is_active')) {
+                $query->where('is_active', $request->boolean('is_active'));
+            }
+
+            if ($request->has('project_id')) {
+                $query->where('project_id', $request->project_id);
+            }
+
+            $perPage = min($request->get('per_page', 20), 100);
+            $subgroups = $query->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $subgroups->items(),
+                'pagination' => [
+                    'current_page' => $subgroups->currentPage(),
+                    'total_pages' => $subgroups->lastPage(),
+                    'per_page' => $subgroups->perPage(),
+                    'total' => $subgroups->total()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to fetch subgroups',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Afficher un sous-groupe spécifique
+     */
+    public function showSubgroup($id)
+    {
+        try {
+            $subgroup = ProjectSubgroup::with(['project:id,name,description', 'members'])
+                ->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $subgroup
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Subgroup not found',
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Mettre à jour un sous-groupe
+     */
+    public function updateSubgroup(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:100',
+            'description' => 'nullable|string',
+            'leader_id' => 'sometimes|string|max:50',
+            'leader_username' => 'sometimes|string|max:100',
+            'channel_id' => 'nullable|string|max:50',
+            'role_id' => 'nullable|string|max:50',
+            'max_members' => 'nullable|integer|min:1|max:20',
+            'is_active' => 'boolean'
+        ]);
+
+        try {
+            $subgroup = ProjectSubgroup::findOrFail($id);
+            $subgroup->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'data' => $subgroup->load('members'),
+                'message' => 'Sous-groupe mis à jour'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to update subgroup',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Supprimer un sous-groupe
+     */
+    public function deleteSubgroup($id)
+    {
+        try {
+            $subgroup = ProjectSubgroup::findOrFail($id);
+            
+            // Supprimer tous les membres du sous-groupe
+            $subgroup->members()->delete();
+            $subgroup->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sous-groupe supprimé'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to delete subgroup',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Liste des membres d'un sous-groupe
+     */
+    public function subgroupMembers($id)
+    {
+        try {
+            $subgroup = ProjectSubgroup::with(['members', 'project:id,name'])
+                ->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'subgroup' => $subgroup,
+                    'members' => $subgroup->members,
+                    'member_count' => $subgroup->members->count(),
+                    'max_members' => $subgroup->max_members
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Subgroup not found',
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Ajouter un membre à un sous-groupe
+     */
+    public function addToSubgroup(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|string|max:50',
+            'username' => 'required|string|max:100',
+            'role' => 'sometimes|in:member,leader'
+        ]);
+
+        try {
+            $subgroup = ProjectSubgroup::with('members')->findOrFail($id);
+
+            // Vérifier si l'utilisateur est déjà membre
+            $existingMember = $subgroup->members()
+                ->where('user_id', $validated['user_id'])
+                ->first();
+
+            if ($existingMember) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'User already in subgroup'
+                ], 409);
+            }
+
+            // Vérifier la limite de membres
+            if ($subgroup->max_members && $subgroup->members->count() >= $subgroup->max_members) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Subgroup is full',
+                    'message' => "Le sous-groupe a atteint sa limite de {$subgroup->max_members} membres"
+                ], 409);
+            }
+
+            $member = ProjectGroupMember::create([
+                'subgroup_id' => $subgroup->id,
+                'user_id' => $validated['user_id'],
+                'username' => $validated['username'],
+                'role' => $validated['role'] ?? 'member',
+                'joined_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $member,
+                'message' => 'Membre ajouté au sous-groupe'
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to add member to subgroup',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Retirer un membre d'un sous-groupe
+     */
+    public function removeFromSubgroup(Request $request, $id, $userId)
+    {
+        try {
+            $subgroup = ProjectSubgroup::findOrFail($id);
+
+            $member = ProjectGroupMember::where('subgroup_id', $id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
+
+            // Ne pas permettre de retirer le leader
+            if ($member->role === 'leader') {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Cannot remove leader',
+                    'message' => 'Impossible de retirer le leader du sous-groupe'
+                ], 409);
+            }
+
+            $member->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Membre retiré du sous-groupe'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to remove member from subgroup',
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Statistiques des projets
+     */
+    public function stats()
+    {
+        try {
+            $stats = [
+                'total_projects' => MainProject::count(),
+                'active_projects' => MainProject::whereIn('status', ['planning', 'in_progress'])->count(),
+                'completed_projects' => MainProject::where('status', 'completed')->count(),
+                'total_subgroups' => ProjectSubgroup::count(),
+                'active_subgroups' => ProjectSubgroup::where('is_active', true)->count(),
+                'total_members' => ProjectGroupMember::count(),
+                'projects_by_type' => [
+                    'web' => MainProject::where('type', 'web')->count(),
+                    'mobile' => MainProject::where('type', 'mobile')->count(),
+                    'desktop' => MainProject::where('type', 'desktop')->count(),
+                    'api' => MainProject::where('type', 'api')->count(),
+                    'other' => MainProject::where('type', 'other')->count(),
+                ],
+                'projects_by_status' => [
+                    'planning' => MainProject::where('status', 'planning')->count(),
+                    'in_progress' => MainProject::where('status', 'in_progress')->count(),
+                    'on_hold' => MainProject::where('status', 'on_hold')->count(),
+                    'completed' => MainProject::where('status', 'completed')->count(),
+                    'cancelled' => MainProject::where('status', 'cancelled')->count(),
+                ]
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to fetch project stats',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

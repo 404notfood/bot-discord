@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\DiscordController;
 use App\Http\Controllers\Api\ModerationController;
 use App\Http\Controllers\Api\ProjectsApiController;
 use App\Http\Controllers\Api\StatsController;
+use App\Http\Controllers\Api\SchedulerController;
+use App\Http\Controllers\Api\StudiController;
+use App\Http\Controllers\Api\DocumentationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,13 +78,74 @@ Route::middleware(['throttle:api'])->group(function () {
         Route::prefix('projects')->group(function () {
             Route::get('/', [ProjectsApiController::class, 'index']);
             Route::post('/', [ProjectsApiController::class, 'store']);
+            Route::get('/stats', [ProjectsApiController::class, 'stats']);
             Route::get('/{id}', [ProjectsApiController::class, 'show']);
             Route::put('/{id}', [ProjectsApiController::class, 'update']);
             Route::delete('/{id}', [ProjectsApiController::class, 'destroy']);
             
-            // Sous-groupes
+            // Sous-groupes d'un projet spécifique
             Route::get('/{id}/subgroups', [ProjectsApiController::class, 'subgroups']);
             Route::post('/{id}/subgroups', [ProjectsApiController::class, 'createSubgroup']);
+        });
+
+        // Sous-groupes (global)
+        Route::prefix('subgroups')->group(function () {
+            Route::get('/', [ProjectsApiController::class, 'listSubgroups']);
+            Route::get('/{id}', [ProjectsApiController::class, 'showSubgroup']);
+            Route::put('/{id}', [ProjectsApiController::class, 'updateSubgroup']);
+            Route::delete('/{id}', [ProjectsApiController::class, 'deleteSubgroup']);
+            
+            // Gestion des membres
+            Route::get('/{id}/members', [ProjectsApiController::class, 'subgroupMembers']);
+            Route::post('/{id}/members', [ProjectsApiController::class, 'addToSubgroup']);
+            Route::delete('/{id}/members/{userId}', [ProjectsApiController::class, 'removeFromSubgroup']);
+        });
+
+        // Planificateur de tâches
+        Route::prefix('scheduler')->group(function () {
+            Route::get('/', [SchedulerController::class, 'index']);
+            Route::get('/config', [SchedulerController::class, 'config']);
+            Route::put('/config', [SchedulerController::class, 'updateConfig']);
+            Route::put('/{taskName}/toggle', [SchedulerController::class, 'toggle']);
+            Route::post('/{taskName}/execute', [SchedulerController::class, 'execute']);
+        });
+
+        // Système Anti-Studi
+        Route::prefix('studi')->group(function () {
+            Route::get('/config', [StudiController::class, 'config']);
+            Route::put('/config', [StudiController::class, 'updateConfig']);
+            Route::get('/status', [StudiController::class, 'status']);
+            Route::get('/dashboard', [StudiController::class, 'dashboard']);
+            Route::post('/init', [StudiController::class, 'initializeDatabase']);
+            
+            // Utilisateurs bannis
+            Route::get('/banned', [StudiController::class, 'bannedUsers']);
+            Route::post('/ban', [StudiController::class, 'banUser']);
+            Route::delete('/ban/{userId}', [StudiController::class, 'unbanUser']);
+            
+            // Whitelist
+            Route::get('/whitelist', [StudiController::class, 'whitelist']);
+            Route::post('/whitelist', [StudiController::class, 'addToWhitelist']);
+            Route::delete('/whitelist/{userId}', [StudiController::class, 'removeFromWhitelist']);
+        });
+
+        // Documentation
+        Route::prefix('docs')->group(function () {
+            Route::get('/search', [DocumentationController::class, 'search']);
+            Route::get('/stats', [DocumentationController::class, 'stats']);
+            
+            // Catégories
+            Route::get('/categories', [DocumentationController::class, 'categories']);
+            Route::post('/categories', [DocumentationController::class, 'createCategory']);
+            Route::put('/categories/{id}', [DocumentationController::class, 'updateCategory']);
+            Route::delete('/categories/{id}', [DocumentationController::class, 'deleteCategory']);
+            
+            // Ressources
+            Route::get('/resources', [DocumentationController::class, 'resources']);
+            Route::get('/resources/{id}', [DocumentationController::class, 'showResource']);
+            Route::post('/resources', [DocumentationController::class, 'createResource']);
+            Route::put('/resources/{id}', [DocumentationController::class, 'updateResource']);
+            Route::delete('/resources/{id}', [DocumentationController::class, 'deleteResource']);
         });
         
         // Configuration
