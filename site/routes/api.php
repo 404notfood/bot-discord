@@ -148,6 +148,15 @@ Route::middleware(['throttle:api'])->group(function () {
             Route::delete('/resources/{id}', [DocumentationController::class, 'deleteResource']);
         });
         
+        // Contrôle du bot
+        Route::prefix('bot-control')->group(function () {
+            Route::get('/status', [App\Http\Controllers\Api\BotControlController::class, 'status']);
+            Route::post('/start', [App\Http\Controllers\Api\BotControlController::class, 'start']);
+            Route::post('/stop', [App\Http\Controllers\Api\BotControlController::class, 'stop']);
+            Route::post('/restart', [App\Http\Controllers\Api\BotControlController::class, 'restart']);
+            Route::get('/logs', [App\Http\Controllers\Api\BotControlController::class, 'logs']);
+        });
+
         // Configuration
         Route::prefix('config')->group(function () {
             Route::get('/', [DiscordController::class, 'config']);

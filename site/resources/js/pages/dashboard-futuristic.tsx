@@ -3,6 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 interface DashboardStats {
     bot: {
@@ -63,6 +64,14 @@ export default function DashboardFuturistic() {
     })
 
     const [currentTime, setCurrentTime] = useState(new Date())
+    const [botStatus, setBotStatus] = useState({
+        running: false,
+        pid: null,
+        uptime: 'Not running',
+        memory_usage: '0 MB',
+        cpu_usage: '0%'
+    })
+    const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -71,6 +80,78 @@ export default function DashboardFuturistic() {
 
         return () => clearInterval(timer)
     }, [])
+
+    useEffect(() => {
+        fetchBotStatus()
+        const statusTimer = setInterval(fetchBotStatus, 30000) // Check every 30 seconds
+        return () => clearInterval(statusTimer)
+    }, [])
+
+    const fetchBotStatus = async () => {
+        try {
+            const response = await axios.get('/api/discord/bot-control/status')
+            if (response.data.success) {
+                setBotStatus(response.data.data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch bot status:', error)
+        }
+    }
+
+    const startBot = async () => {
+        setIsLoading(true)
+        try {
+            const response = await axios.post('/api/discord/bot-control/start')
+            if (response.data.success) {
+                await fetchBotStatus() // Refresh status
+            }
+        } catch (error) {
+            console.error('Failed to start bot:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const stopBot = async () => {
+        setIsLoading(true)
+        try {
+            const response = await axios.post('/api/discord/bot-control/stop')
+            if (response.data.success) {
+                await fetchBotStatus() // Refresh status
+            }
+        } catch (error) {
+            console.error('Failed to stop bot:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const restartBot = async () => {
+        setIsLoading(true)
+        try {
+            const response = await axios.post('/api/discord/bot-control/restart')
+            if (response.data.success) {
+                await fetchBotStatus() // Refresh status
+            }
+        } catch (error) {
+            console.error('Failed to restart bot:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const viewLogs = async () => {
+        try {
+            const response = await axios.get('/api/discord/bot-control/logs')
+            if (response.data.success) {
+                // Open logs in a new window or modal
+                const logWindow = window.open('', '_blank')
+                logWindow.document.write(`<pre>${response.data.data.logs}</pre>`)
+            }
+        } catch (error) {
+            console.error('Failed to fetch logs:', error)
+        }
+    }
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -248,21 +329,60 @@ export default function DashboardFuturistic() {
                     </div>
                 </div>
 
-                {/* Advanced Control Panel */}
+                {/* Bot Control Panel */}
                 <div className="glass-card p-6">
-                    <div className="metric-label mb-6">Advanced Operations</div>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="metric-label">Bot Control Center</div>
+                        <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${botStatus.running ? 'bg-success animate-pulse' : 'bg-destructive'}`}></div>
+                            <span className={`text-sm font-mono ${botStatus.running ? 'text-success' : 'text-destructive'}`}>
+                                {botStatus.running ? 'ONLINE' : 'OFFLINE'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div className="metric-card">
+                            <div className="metric-label">Status</div>
+                            <div className={`metric-value ${botStatus.running ? 'text-success' : 'text-destructive'}`}>
+                                {botStatus.running ? 'Running' : 'Stopped'}
+                            </div>
+                        </div>
+                        <div className="metric-card">
+                            <div className="metric-label">Uptime</div>
+                            <div className="metric-value">{botStatus.uptime}</div>
+                        </div>
+                        <div className="metric-card">
+                            <div className="metric-label">Memory</div>
+                            <div className="metric-value">{botStatus.memory_usage}</div>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <button className="cyber-button px-4 py-3 rounded-lg text-sm font-medium">
-                            Run Diagnostics
+                        <button 
+                            onClick={restartBot}
+                            className="cyber-button px-4 py-3 rounded-lg text-sm font-medium"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'PROCESSING...' : 'RESTART BOT'}
+                        </button>
+                        <button 
+                            onClick={botStatus.running ? stopBot : startBot}
+                            className={`cyber-button px-4 py-3 rounded-lg text-sm font-medium ${
+                                botStatus.running ? 'text-destructive border-destructive/30' : 'text-success border-success/30'
+                            }`}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'PROCESSING...' : (botStatus.running ? 'STOP BOT' : 'START BOT')}
+                        </button>
+                        <button 
+                            onClick={viewLogs}
+                            className="cyber-button px-4 py-3 rounded-lg text-sm font-medium"
+                        >
+                            VIEW LOGS
                         </button>
                         <button className="cyber-button px-4 py-3 rounded-lg text-sm font-medium">
-                            Sync Database
-                        </button>
-                        <button className="cyber-button px-4 py-3 rounded-lg text-sm font-medium">
-                            Bot Restart
-                        </button>
-                        <button className="cyber-button px-4 py-3 rounded-lg text-sm font-medium">
-                            Export Logs
+                            SYNC DATABASE
                         </button>
                     </div>
                 </div>

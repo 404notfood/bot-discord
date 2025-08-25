@@ -46,6 +46,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return inertia('studi-defense');
     })->name('studi-defense');
     
+    Route::get('task-scheduler', function () {
+        return inertia('task-scheduler');
+    })->name('task-scheduler');
+    
     // Routes pour la gestion des membres
     Route::get('members', [App\Http\Controllers\MembersController::class, 'index'])->name('members.index');
     Route::get('members/{id}', [App\Http\Controllers\MembersController::class, 'show'])->name('members.show');
