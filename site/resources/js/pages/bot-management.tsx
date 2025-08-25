@@ -3,9 +3,10 @@ import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Control Center', href: '/dashboard' },
+    { title: 'Control Center', href: '/control-center' },
     { title: 'Bot Management', href: '/bot-management' },
 ];
 
@@ -24,50 +25,116 @@ interface BotModerator {
 }
 
 export default function BotManagement() {
-    const [admins, setAdmins] = useState<BotAdmin[]>([
-        { user_id: '123456789', username: 'admin01', added_at: '2024-01-15', status: 'active' },
-        { user_id: '987654321', username: 'admin02', added_at: '2024-02-20', status: 'active' }
-    ]);
-
-    const [moderators, setModerators] = useState<BotModerator[]>([
-        { user_id: '111222333', username: 'mod01', added_at: '2024-01-20', status: 'active' },
-        { user_id: '444555666', username: 'mod02', added_at: '2024-02-15', status: 'active' },
-        { user_id: '777888999', username: 'mod03', added_at: '2024-03-01', status: 'inactive' }
-    ]);
-
+    const [admins, setAdmins] = useState<BotAdmin[]>([]);
+    const [moderators, setModerators] = useState<BotModerator[]>([]);
     const [newAdmin, setNewAdmin] = useState({ user_id: '', username: '' });
     const [newMod, setNewMod] = useState({ user_id: '', username: '' });
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        fetchAdmins();
+        fetchModerators();
+    }, []);
+
+    const fetchAdmins = async () => {
+        try {
+            const response = await axios.get('/api/discord/bot-admins');
+            if (response.data.success) {
+                setAdmins(response.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch admins:', error);
+            setError('Failed to load administrators');
+        }
+    };
+
+    const fetchModerators = async () => {
+        try {
+            const response = await axios.get('/api/discord/bot-moderators');
+            if (response.data.success) {
+                setModerators(response.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch moderators:', error);
+            setError('Failed to load moderators');
+        }
+    };
 
     const handleAddAdmin = async () => {
         if (newAdmin.user_id && newAdmin.username) {
-            const admin: BotAdmin = {
-                ...newAdmin,
-                added_at: new Date().toISOString().split('T')[0],
-                status: 'active'
-            };
-            setAdmins([...admins, admin]);
-            setNewAdmin({ user_id: '', username: '' });
+            setIsLoading(true);
+            try {
+                const response = await axios.post('/api/discord/bot-admins', {
+                    user_id: newAdmin.user_id,
+                    username: newAdmin.username
+                });
+                if (response.data.success) {
+                    await fetchAdmins();
+                    setNewAdmin({ user_id: '', username: '' });
+                    setError('');
+                }
+            } catch (error) {
+                setError('Failed to add administrator');
+                console.error('Failed to add admin:', error);
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
     const handleAddModerator = async () => {
         if (newMod.user_id && newMod.username) {
-            const moderator: BotModerator = {
-                ...newMod,
-                added_at: new Date().toISOString().split('T')[0],
-                status: 'active'
-            };
-            setModerators([...moderators, moderator]);
-            setNewMod({ user_id: '', username: '' });
+            setIsLoading(true);
+            try {
+                const response = await axios.post('/api/discord/bot-moderators', {
+                    user_id: newMod.user_id,
+                    username: newMod.username
+                });
+                if (response.data.success) {
+                    await fetchModerators();
+                    setNewMod({ user_id: '', username: '' });
+                    setError('');
+                }
+            } catch (error) {
+                setError('Failed to add moderator');
+                console.error('Failed to add moderator:', error);
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
-    const handleRemoveAdmin = (userId: string) => {
-        setAdmins(admins.filter(admin => admin.user_id !== userId));
+    const handleRemoveAdmin = async (userId: string) => {
+        setIsLoading(true);
+        try {
+            const response = await axios.delete(`/api/discord/bot-admins/${userId}`);
+            if (response.data.success) {
+                await fetchAdmins();
+                setError('');
+            }
+        } catch (error) {
+            setError('Failed to remove administrator');
+            console.error('Failed to remove admin:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleRemoveModerator = (userId: string) => {
-        setModerators(moderators.filter(mod => mod.user_id !== userId));
+    const handleRemoveModerator = async (userId: string) => {
+        setIsLoading(true);
+        try {
+            const response = await axios.delete(`/api/discord/bot-moderators/${userId}`);
+            if (response.data.success) {
+                await fetchModerators();
+                setError('');
+            }
+        } catch (error) {
+            setError('Failed to remove moderator');
+            console.error('Failed to remove moderator:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (

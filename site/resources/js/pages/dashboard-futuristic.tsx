@@ -178,12 +178,18 @@ export default function DashboardFuturistic() {
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="holo-text text-4xl font-bold tracking-tight">
+                        <h1 className="holo-text text-5xl font-bold tracking-tight mb-2" data-text="CONTROL CENTER">
                             CONTROL CENTER
                         </h1>
-                        <p className="text-muted-foreground font-mono mt-2 text-sm">
-                            SYSTEM OPERATIONAL STATUS: ALL SYSTEMS NOMINAL
-                        </p>
+                        <div className="flex items-center gap-4 mt-3">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                                <span className="text-success font-mono text-sm">SYSTEM OPERATIONAL</span>
+                            </div>
+                            <div className="text-muted-foreground font-mono text-xs">
+                                STATUS: ALL SYSTEMS NOMINAL
+                            </div>
+                        </div>
                     </div>
                     <div className="glass-card p-4 text-right">
                         <div className="text-2xl font-mono holo-text">
@@ -311,20 +317,32 @@ export default function DashboardFuturistic() {
                 </div>
 
                 {/* Quick Actions Navigation */}
-                <div className="glass-card p-6">
+                <div className="glass-card p-6 scanlines">
                     <div className="metric-label mb-6">System Modules</div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <Link href="/members" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center">
+                        <Link href="/bot-management" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center neon-glow">
+                            Bot Management
+                        </Link>
+                        <Link href="/studi-defense" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center neon-glow">
+                            Studi Defense
+                        </Link>
+                        <Link href="/task-scheduler" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center neon-glow">
+                            Task Scheduler
+                        </Link>
+                        <Link href="/members" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center neon-glow">
                             User Management
                         </Link>
-                        <Link href="/projects" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center">
+                        <Link href="/projects" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center neon-glow">
                             Project Control
                         </Link>
-                        <Link href="/logs" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center">
+                        <Link href="/logs" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center neon-glow">
                             Activity Logs
                         </Link>
-                        <Link href="/config" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center">
+                        <Link href="/config" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center neon-glow">
                             System Config
+                        </Link>
+                        <Link href="/settings/profile" className="cyber-button px-4 py-3 rounded-lg text-sm font-medium text-center neon-glow">
+                            Profile Settings
                         </Link>
                     </div>
                 </div>

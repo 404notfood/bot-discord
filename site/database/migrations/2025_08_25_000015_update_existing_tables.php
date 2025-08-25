@@ -37,7 +37,7 @@ return new class extends Migration
         // Mettre à jour la table main_projects
         Schema::table('main_projects', function (Blueprint $table) {
             if (!Schema::hasColumn('main_projects', 'channel_id')) {
-                $table->string('channel_id', 50)->nullable()->after('leader_username')->comment('Canal Discord du projet');
+                $table->string('channel_id', 50)->nullable()->after('members_count')->comment('Canal Discord du projet');
             }
             if (!Schema::hasColumn('main_projects', 'role_id')) {
                 $table->string('role_id', 50)->nullable()->after('channel_id')->comment('Rôle Discord du projet');
@@ -48,24 +48,27 @@ return new class extends Migration
             if (!Schema::hasColumn('main_projects', 'technologies')) {
                 $table->json('technologies')->nullable()->after('max_members')->comment('Technologies utilisées');
             }
-            if (!Schema::hasColumn('main_projects', 'start_date')) {
-                $table->date('start_date')->nullable()->after('technologies');
+            if (!Schema::hasColumn('main_projects', 'leader_username')) {
+                $table->string('leader_username', 50)->nullable()->after('owner_id')->comment('Nom du leader du projet');
             }
             if (!Schema::hasColumn('main_projects', 'end_date')) {
-                $table->date('end_date')->nullable()->after('start_date');
+                $table->date('end_date')->nullable()->after('due_date');
             }
         });
 
-        // Mettre à jour la table project_subgroups
-        Schema::table('project_subgroups', function (Blueprint $table) {
-            if (!Schema::hasColumn('project_subgroups', 'channel_id')) {
-                $table->string('channel_id', 50)->nullable()->after('leader_username');
+        // Mettre à jour la table subgroups
+        Schema::table('subgroups', function (Blueprint $table) {
+            if (!Schema::hasColumn('subgroups', 'channel_id')) {
+                $table->string('channel_id', 50)->nullable()->after('leader_id');
             }
-            if (!Schema::hasColumn('project_subgroups', 'role_id')) {
+            if (!Schema::hasColumn('subgroups', 'role_id')) {
                 $table->string('role_id', 50)->nullable()->after('channel_id');
             }
-            if (!Schema::hasColumn('project_subgroups', 'max_members')) {
+            if (!Schema::hasColumn('subgroups', 'max_members')) {
                 $table->integer('max_members')->nullable()->default(5)->after('role_id');
+            }
+            if (!Schema::hasColumn('subgroups', 'leader_username')) {
+                $table->string('leader_username', 50)->nullable()->after('leader_id')->comment('Nom du leader du sous-groupe');
             }
         });
 
@@ -92,12 +95,12 @@ return new class extends Migration
             $table->dropColumn(['tags', 'difficulty_level', 'is_active', 'view_count']);
         });
 
-        Schema::table('project_subgroups', function (Blueprint $table) {
-            $table->dropColumn(['channel_id', 'role_id', 'max_members']);
+        Schema::table('subgroups', function (Blueprint $table) {
+            $table->dropColumn(['channel_id', 'role_id', 'max_members', 'leader_username']);
         });
 
         Schema::table('main_projects', function (Blueprint $table) {
-            $table->dropColumn(['channel_id', 'role_id', 'max_members', 'technologies', 'start_date', 'end_date']);
+            $table->dropColumn(['channel_id', 'role_id', 'max_members', 'technologies', 'leader_username', 'end_date']);
         });
 
         Schema::table('dashboard_members', function (Blueprint $table) {

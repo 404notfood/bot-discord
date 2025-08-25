@@ -22,4 +22,12 @@ export default defineConfig({
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy'),
         },
     },
+    optimizeDeps: {
+        include: ['aria-hidden']
+    },
+    build: {
+        commonjsOptions: {
+            include: [/aria-hidden/, /node_modules/]
+        }
+    }
 });

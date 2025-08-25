@@ -31,9 +31,12 @@ Route::get('/test-models', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    // Main Dashboard - Now using the futuristic version
+    Route::get('dashboard', function () {
+        return inertia('dashboard-futuristic');
+    })->name('dashboard');
     
-    // Futuristic Dashboard Routes
+    // Keep control-center as alias
     Route::get('control-center', function () {
         return inertia('dashboard-futuristic');
     })->name('control-center');

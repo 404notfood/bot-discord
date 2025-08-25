@@ -41,6 +41,12 @@
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
 
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
@@ -83,7 +89,9 @@
     --input: oklch(0.94 0.01 258);
     --ring: oklch(0.55 0.2 258);
     --success: oklch(0.55 0.2 142);
+    --success-foreground: oklch(0.98 0 0);
     --warning: oklch(0.7 0.18 65);
+    --warning-foreground: oklch(0.98 0 0);
     --chart-1: oklch(0.55 0.2 258);
     --chart-2: oklch(0.65 0.25 285);
     --chart-3: oklch(0.55 0.2 142);
@@ -122,7 +130,9 @@
     --input: oklch(0.15 0.02 258);
     --ring: oklch(0.65 0.25 258);
     --success: oklch(0.65 0.25 142);
+    --success-foreground: oklch(0.08 0.01 258);
     --warning: oklch(0.75 0.2 65);
+    --warning-foreground: oklch(0.08 0.01 258);
     --chart-1: oklch(0.65 0.25 258);
     --chart-2: oklch(0.7 0.3 285);
     --chart-3: oklch(0.65 0.25 142);
@@ -160,16 +170,55 @@
 @layer components {
     /* Futuristic Glass Effect */
     .glass-card {
-        @apply backdrop-blur-xl bg-card/50 border border-border/40;
+        @apply backdrop-blur-xl bg-card/30 border border-border/60;
+        background: 
+            linear-gradient(135deg, oklch(0.65 0.25 258 / 0.1), transparent 40%, oklch(0.7 0.3 285 / 0.08)),
+            radial-gradient(circle at top right, oklch(0.65 0.25 142 / 0.05), transparent 60%);
         box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            0 12px 40px rgba(0, 0, 0, 0.15),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(45deg, transparent, oklch(0.65 0.25 258 / 0.08), transparent);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+
+    .glass-card:hover {
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.2),
+            0 0 30px oklch(0.65 0.25 258 / 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .glass-card:hover::before {
+        opacity: 1;
     }
 
     .dark .glass-card {
+        background: 
+            linear-gradient(135deg, oklch(0.65 0.25 258 / 0.15), transparent 40%, oklch(0.7 0.3 285 / 0.1)),
+            radial-gradient(circle at top right, oklch(0.65 0.25 142 / 0.08), transparent 60%);
         box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            0 12px 40px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.03),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .dark .glass-card:hover {
+        box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.5),
+            0 0 40px oklch(0.65 0.25 258 / 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
 
     /* Neon Glow Effects */
@@ -249,22 +298,76 @@
 
     /* Holographic Text */
     .holo-text {
-        background: linear-gradient(45deg, oklch(0.65 0.25 258), oklch(0.7 0.3 285), oklch(0.65 0.25 142));
+        background: linear-gradient(45deg, 
+            oklch(0.65 0.25 258), 
+            oklch(0.7 0.3 285), 
+            oklch(0.65 0.25 142),
+            oklch(0.75 0.2 65),
+            oklch(0.65 0.25 258));
+        background-size: 200% 200%;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
         font-weight: 600;
         letter-spacing: 0.02em;
+        animation: holo-flow 3s ease-in-out infinite;
+        position: relative;
+        text-shadow: 0 0 20px oklch(0.65 0.25 258 / 0.3);
+    }
+
+    @keyframes holo-flow {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    /* Scanlines Effect */
+    .scanlines {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .scanlines::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            oklch(0.65 0.25 258 / 0.03) 2px,
+            oklch(0.65 0.25 258 / 0.03) 4px
+        );
+        pointer-events: none;
+        animation: scan 2s linear infinite;
+    }
+
+    @keyframes scan {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(100%); }
     }
 
     /* Metric Cards */
     .metric-card {
-        @apply glass-card p-6 hover:scale-[1.02] transition-all duration-300;
+        @apply backdrop-blur-xl bg-card/50 border border-border/40 p-6 hover:scale-[1.02] transition-all duration-300;
         background: radial-gradient(circle at top right, oklch(0.65 0.25 258 / 0.1), transparent 70%);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .dark .metric-card {
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     .metric-value {
-        @apply text-3xl font-bold tracking-tight holo-text;
+        @apply text-3xl font-bold tracking-tight;
+        background: linear-gradient(45deg, oklch(0.65 0.25 258), oklch(0.7 0.3 285), oklch(0.65 0.25 142));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600;
     }
 
     .metric-label {
