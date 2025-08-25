@@ -4,32 +4,47 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Users, FileText, Settings, Shield, FolderOpen } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Users, FileText, Settings, Shield, FolderOpen, Bot, Zap, Calendar, UserCog } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Control Center',
         href: '/dashboard',
         icon: LayoutGrid,
     },
     {
-        title: 'Membres',
+        title: 'Bot Management',
+        href: '/bot-management',
+        icon: Bot,
+    },
+    {
+        title: 'Studi Defense',
+        href: '/studi-defense',
+        icon: Shield,
+    },
+    {
+        title: 'Task Scheduler',
+        href: '/task-scheduler',
+        icon: Calendar,
+    },
+    {
+        title: 'User Management',
         href: '/members',
         icon: Users,
     },
     {
-        title: 'Logs de Modération',
-        href: '/logs',
-        icon: Shield,
-    },
-    {
-        title: 'Projets',
+        title: 'Project Control',
         href: '/projects',
         icon: FolderOpen,
     },
     {
-        title: 'Configuration',
+        title: 'Activity Logs',
+        href: '/logs',
+        icon: FileText,
+    },
+    {
+        title: 'System Config',
         href: '/config',
         icon: Settings,
     },

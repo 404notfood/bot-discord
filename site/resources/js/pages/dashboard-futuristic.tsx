@@ -40,21 +40,21 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function DashboardFuturistic() {
     const [stats, setStats] = useState<DashboardStats>({
         bot: {
-            status: 'online',
-            uptime: '2d 14h 32m',
-            servers: 3,
-            users: 247,
-            commands_today: 156
+            status: 'offline',
+            uptime: '--',
+            servers: 0,
+            users: 0,
+            commands_today: 0
         },
         projects: {
-            total: 8,
-            active: 5,
-            completed: 3
+            total: 0,
+            active: 0,
+            completed: 0
         },
         studi: {
-            banned_users: 12,
-            whitelist_users: 45,
-            checks_today: 89
+            banned_users: 0,
+            whitelist_users: 0,
+            checks_today: 0
         },
         system: {
             database: 'healthy',
@@ -83,9 +83,25 @@ export default function DashboardFuturistic() {
 
     useEffect(() => {
         fetchBotStatus()
-        const statusTimer = setInterval(fetchBotStatus, 30000) // Check every 30 seconds
-        return () => clearInterval(statusTimer)
+        fetchDashboardStats()
+        const statusTimer = setInterval(fetchBotStatus, 30000)
+        const statsTimer = setInterval(fetchDashboardStats, 60000) // Update stats every minute
+        return () => {
+            clearInterval(statusTimer)
+            clearInterval(statsTimer)
+        }
     }, [])
+
+    const fetchDashboardStats = async () => {
+        try {
+            const response = await axios.get('/api/discord/stats/dashboard')
+            if (response.data.success) {
+                setStats(response.data.data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch dashboard stats:', error)
+        }
+    }
 
     const fetchBotStatus = async () => {
         try {
