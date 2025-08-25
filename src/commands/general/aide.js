@@ -23,9 +23,10 @@ export default {
             name: '📋 Commandes Générales',
             value: '`/aide` - Affiche cette aide\n' +
                   '`/ping` - Vérifier la latence du bot\n' +
-                  '`/info` - Informations sur le bot\n' +
+                  '`/info` - Informations sur le bot et le serveur\n' +
                   '`/search` - Recherche sur le web\n' +
-                  '`/docs` - Documentation technique'
+                  '`/docs` - Documentation technique\n' +
+                  '`/rappel` - Créer un rappel'
           }
         );
 
@@ -37,26 +38,52 @@ export default {
       const isAdminByID = adminIDs.includes(interaction.user.id);
       const isAdmin = hasAdminPermission || isAdminByID;
       
+      // Ajouter les commandes de modération (visibles pour tous)
+      embed.addFields({
+        name: '🛡️ Commandes de Modération',
+        value: '`/ban_add` - Bannir un utilisateur\n' +
+              '`/ban_remove` - Débannir un utilisateur'
+      });
+
       // Ajouter les commandes d'administration si l'utilisateur est admin
       if (isAdmin) {
         embed.addFields({
-          name: '🔧 Commandes Administratives',
-          value: '`/config` - Configuration générale\n' +
-                '`/list_staff` - Liste des administrateurs et modérateurs\n' +
-                '`/add_admin` - Ajouter un administrateur\n' +
+          name: '🔧 Administration - Utilisateurs',
+          value: '`/add_admin` - Ajouter un administrateur\n' +
                 '`/remove_admin` - Retirer un administrateur\n' +
                 '`/addmoderator` - Ajouter un modérateur\n' +
                 '`/remove_mod` - Retirer un modérateur\n' +
-                '`/stats` - Statistiques du bot'
+                '`/list_staff` - Liste des administrateurs et modérateurs'
         });
         
+        embed.addFields({
+          name: '⚙️ Administration - Système',
+          value: '`/config` - Configuration générale\n' +
+                '`/start` - Démarrer des services du bot\n' +
+                '`/stop` - Arrêter des services du bot\n' +
+                '`/stats` - Statistiques du bot\n' +
+                '`/test` - Tester toutes les fonctionnalités\n' +
+                '`/monitoring` - Surveillance du système'
+        });
+
+        embed.addFields({
+          name: '🗄️ Administration - Base de données',
+          value: '`/db_status` - État de la base de données\n' +
+                '`/db_fix` - Réparer la base de données\n' +
+                '`/db_reset` - Réinitialiser la base de données\n' +
+                '`/system_health` - Santé globale du système\n' +
+                '`/diagnostics` - Diagnostics complets'
+        });
+
         embed.addFields({
           name: '🧑‍💻 Système Anti-Studi',
           value: '`/studi_config` - Configuration du système anti-Studi\n' +
                 '`/studi_status` - État actuel du système anti-Studi\n' +
-                '`/studi_ban_add` - Ajouter un utilisateur à la liste anti-Studi\n' +
-                '`/studi_ban_remove` - Retirer un utilisateur de la liste anti-Studi\n' +
-                '`/studi_ban_list` - Afficher la liste des utilisateurs bannis'
+                '`/studi_ban_add` - Ajouter à la liste anti-Studi\n' +
+                '`/studi_ban_remove` - Retirer de la liste anti-Studi\n' +
+                '`/studi_whitelist` - Gérer la whitelist Studi\n' +
+                '`/studi_dashboard` - Dashboard du système anti-Studi\n' +
+                '`/studi_db_init` - Initialiser la base de données Studi'
         });
         
         embed.addFields({
@@ -67,10 +94,38 @@ export default {
                 '`/add_to_subgroup` - Ajouter un membre au sous-groupe\n' +
                 '`/remove_from_subgroup` - Retirer un membre du sous-groupe\n' +
                 '`/list_subgroups` - Liste des sous-groupes\n' +
-                '`/list_subgroup_members` - Liste des membres d\'un sous-groupe'
+                '`/list_subgroup_members` - Membres d\'un sous-groupe'
+        });
+
+        embed.addFields({
+          name: '🔐 Permissions et Canaux',
+          value: '`/bot_permissions` - Gérer les permissions du bot\n' +
+                '`/bot_roles` - Gérer les rôles du bot\n' +
+                '`/create_private_channel` - Créer un canal privé\n' +
+                '`/manage_channel_permissions` - Gérer les permissions de canal'
+        });
+
+        embed.addFields({
+          name: '⏰ Planification et Services',
+          value: '`/scheduler` - Gérer le planificateur de tâches'
         });
       }
       
+      // Ajouter un récapitulatif pour les admins
+      if (isAdmin) {
+        embed.addFields({
+          name: 'ℹ️ Informations',
+          value: `Bot avec **42 commandes** au total\n• 6 commandes générales\n• 2 commandes de modération\n• 34 commandes administratives\n\nUtilisez \`/test all\` pour vérifier toutes les fonctionnalités`,
+          inline: false
+        });
+      } else {
+        embed.addFields({
+          name: 'ℹ️ Informations',
+          value: 'Bot avec **8 commandes** accessibles aux membres\n• 6 commandes générales\n• 2 commandes de modération',
+          inline: false
+        });
+      }
+
       embed.setFooter({ text: 'Utilisez /aide pour voir cette liste à tout moment' })
         .setTimestamp();
       
