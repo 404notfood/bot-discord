@@ -1,0 +1,23 @@
+{
+    "name": "taureau-celtique/dashboard",
+    "description": "Dashboard PHP pour la gestion du bot Discord Taureau Celtique",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=7.4.0",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-json": "*",
+        "ext-curl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Controllers\\": "Controllers/",
+            "Models\\": "Models/",
+            "Core\\": "Core/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

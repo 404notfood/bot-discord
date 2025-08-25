@@ -5,6 +5,11 @@
 .env.development
 site/.env
 
+# Site 
+    site/.env
+    site/discord_bot.sql
+    todo.md
+
 # Node.js
 node_modules/
 npm-debug.log*
@@ -16,6 +21,7 @@ logs/
 *.log
 bot-out.log
 bot-error.log
+
 
 # IDE & Editors
 .vscode/

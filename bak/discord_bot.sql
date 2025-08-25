@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost:3306
--- Généré le : lun. 25 août 2025 à 01:10
+-- Généré le : dim. 24 août 2025 à 23:10
 -- Version du serveur : 11.4.7-MariaDB-deb12
 -- Version de PHP : 8.4.7
 
@@ -232,7 +232,7 @@ INSERT INTO `doc_categories` (`id`, `name`, `description`, `icon`, `sort_order`,
 (2, 'Backend', 'Technologies pour le développement backend', '??', 2, 1, '2025-05-07 23:41:26', NULL),
 (3, 'Database', 'Systèmes de gestion de bases de données', '??', 3, 1, '2025-05-07 23:41:26', NULL),
 (4, 'DevOps', 'Outils et technologies DevOps', '?', 4, 1, '2025-05-07 23:41:26', NULL),
-(5, 'Mobile', 'Développement d\'applications mobiles', '?', 5, 1, '2025-05-07 23:41:26', NULL),
+(5, 'Mobile', 'Développement d applications mobiles', '?', 5, 1, '2025-05-07 23:41:26', NULL),
 (6, 'Tools', 'Outils de développement', '?', 6, 1, '2025-05-07 23:41:26', NULL);
 
 -- --------------------------------------------------------
