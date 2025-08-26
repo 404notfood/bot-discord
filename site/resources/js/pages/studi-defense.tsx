@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { useState, useEffect } from 'react';
+import apiClient from '@/lib/axios-config';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Control Center', href: '/dashboard' },
@@ -27,36 +28,14 @@ interface StudiWhitelistUser {
 }
 
 export default function StudiDefense() {
-    const [isSystemEnabled, setIsSystemEnabled] = useState(true);
+    const [isSystemEnabled, setIsSystemEnabled] = useState(false);
     const [autoban, setAutoban] = useState(false);
     const [checkNewMembers, setCheckNewMembers] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
 
-    const [bannedUsers, setBannedUsers] = useState<StudiBannedUser[]>([
-        {
-            user_id: '111111111',
-            username: 'suspect01',
-            email: 'user@studi.fr',
-            reason: 'Detected Studi email domain',
-            banned_at: '2024-03-15T14:30:00Z',
-            evidence_url: 'https://example.com/evidence1'
-        },
-        {
-            user_id: '222222222',
-            username: 'suspect02',
-            reason: 'Suspicious activity pattern',
-            banned_at: '2024-03-14T10:15:00Z'
-        }
-    ]);
-
-    const [whitelistUsers, setWhitelistUsers] = useState<StudiWhitelistUser[]>([
-        {
-            user_id: '333333333',
-            username: 'legit_user',
-            email: 'user@studi.fr',
-            reason: 'Verified legitimate student',
-            added_at: '2024-03-10T09:00:00Z'
-        }
-    ]);
+    const [bannedUsers, setBannedUsers] = useState<StudiBannedUser[]>([]);
+    const [whitelistUsers, setWhitelistUsers] = useState<StudiWhitelistUser[]>([]);
 
     const [newBan, setNewBan] = useState({
         user_id: '',
@@ -73,16 +52,84 @@ export default function StudiDefense() {
         reason: ''
     });
 
-    const [stats] = useState({
-        total_checks: 1247,
-        checks_today: 89,
-        banned_total: 156,
-        whitelist_total: 23,
+    const [stats, setStats] = useState({
+        total_checks: 0,
+        checks_today: 0,
+        banned_total: 0,
+        whitelist_total: 0,
         blocked_today: 3,
         false_positives: 2
     });
 
-    const handleAddBan = () => {
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        setIsLoading(true);
+        try {
+            await Promise.all([
+                loadConfig(),
+                loadBannedUsers(),
+                loadWhitelistUsers(),
+                loadDashboardStats()
+            ]);
+        } catch (error) {
+            console.error('Error loading data:', error);
+            setError('Failed to load Anti-Studi data');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const loadConfig = async () => {
+        try {
+            const response = await apiClient.get('/api/discord/studi/config');
+            if (response.data.success) {
+                const config = response.data.data;
+                setIsSystemEnabled(config.is_enabled);
+                setAutoban(config.auto_ban);
+                setCheckNewMembers(config.check_new_members);
+            }
+        } catch (error) {
+            console.error('Failed to load config:', error);
+        }
+    };
+
+    const loadBannedUsers = async () => {
+        try {
+            const response = await apiClient.get('/api/discord/studi/banned');
+            if (response.data.success) {
+                setBannedUsers(response.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to load banned users:', error);
+        }
+    };
+
+    const loadWhitelistUsers = async () => {
+        try {
+            const response = await apiClient.get('/api/discord/studi/whitelist');
+            if (response.data.success) {
+                setWhitelistUsers(response.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to load whitelist:', error);
+        }
+    };
+
+    const loadDashboardStats = async () => {
+        try {
+            const response = await apiClient.get('/api/discord/studi/dashboard');
+            if (response.data.success) {
+                setStats(response.data.data.statistics || stats);
+            }
+        } catch (error) {
+            console.error('Failed to load stats:', error);
+        }
+    };
+
+    const handleAddBan = async () => {
         if (newBan.user_id && newBan.username && newBan.reason) {
             const ban: StudiBannedUser = {
                 ...newBan,

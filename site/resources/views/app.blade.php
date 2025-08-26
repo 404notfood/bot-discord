@@ -31,6 +31,8 @@
         </style>
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        
+        <meta name="api-token" content="{{ config('discord.api_secret') }}">
 
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">

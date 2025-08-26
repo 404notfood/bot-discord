@@ -30,6 +30,16 @@ Route::middleware(['throttle:api'])->group(function () {
             'version' => '1.0.0'
         ]);
     });
+    
+    // Routes API publiques pour la documentation (pour le bot)
+    // Temporairement désactivées pour debugging
+    
+    Route::prefix('documentation')->group(function () {
+        Route::get('categories/list', [\App\Http\Controllers\DocCategoryController::class, 'apiList']);
+        Route::get('resources/search', [\App\Http\Controllers\DocResourceController::class, 'apiSearch']);
+        Route::get('resources/stats', [\App\Http\Controllers\DocResourceController::class, 'apiStats']);
+    });
+    
 
     // Routes Discord Bot (authentifiées par token)
     Route::middleware('auth.api.token')->prefix('discord')->group(function () {
@@ -56,16 +66,18 @@ Route::middleware(['throttle:api'])->group(function () {
         
         // Administrateurs du bot
         Route::prefix('bot-admins')->group(function () {
-            Route::get('/', [DiscordController::class, 'botAdmins']);
-            Route::post('/', [DiscordController::class, 'addBotAdmin']);
-            Route::delete('/{userId}', [DiscordController::class, 'removeBotAdmin']);
+            Route::get('/', [App\Http\Controllers\Api\BotAdminController::class, 'index']);
+            Route::post('/', [App\Http\Controllers\Api\BotAdminController::class, 'store']);
+            Route::delete('/{id}', [App\Http\Controllers\Api\BotAdminController::class, 'destroy']);
+            Route::put('/{id}/status', [App\Http\Controllers\Api\BotAdminController::class, 'updateStatus']);
         });
         
         // Modérateurs du bot  
         Route::prefix('bot-moderators')->group(function () {
-            Route::get('/', [DiscordController::class, 'botModerators']);
-            Route::post('/', [DiscordController::class, 'addBotModerator']);
-            Route::delete('/{userId}', [DiscordController::class, 'removeBotModerator']);
+            Route::get('/', [App\Http\Controllers\Api\BotModeratorController::class, 'index']);
+            Route::post('/', [App\Http\Controllers\Api\BotModeratorController::class, 'store']);
+            Route::delete('/{id}', [App\Http\Controllers\Api\BotModeratorController::class, 'destroy']);
+            Route::put('/{id}/status', [App\Http\Controllers\Api\BotModeratorController::class, 'updateStatus']);
         });
         
         // Synchronisation des utilisateurs
@@ -104,10 +116,14 @@ Route::middleware(['throttle:api'])->group(function () {
         // Planificateur de tâches
         Route::prefix('scheduler')->group(function () {
             Route::get('/', [SchedulerController::class, 'index']);
+            Route::post('/', [SchedulerController::class, 'store']);
+            Route::delete('/{taskId}', [SchedulerController::class, 'destroy']);
             Route::get('/config', [SchedulerController::class, 'config']);
             Route::put('/config', [SchedulerController::class, 'updateConfig']);
             Route::put('/{taskName}/toggle', [SchedulerController::class, 'toggle']);
             Route::post('/{taskName}/execute', [SchedulerController::class, 'execute']);
+            Route::post('/system-operation', [SchedulerController::class, 'systemOperation']);
+            Route::get('/logs', [SchedulerController::class, 'logs']);
         });
 
         // Système Anti-Studi

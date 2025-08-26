@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { useState, useEffect } from 'react';
+import apiClient from '@/lib/axios-config';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Control Center', href: '/dashboard' },
@@ -21,60 +22,23 @@ interface ScheduledTask {
 }
 
 export default function TaskScheduler() {
-    const [tasks, setTasks] = useState<ScheduledTask[]>([
-        {
-            id: 'database_sync',
-            name: 'Database Synchronization',
-            description: 'Synchronizes user data between bot and website',
-            interval: '5 minutes',
-            enabled: true,
-            last_run: '2024-03-15T14:25:00Z',
-            next_run: '2024-03-15T14:30:00Z',
-            status: 'running'
-        },
-        {
-            id: 'studi_check',
-            name: 'Anti-Studi Verification',
-            description: 'Checks new members against Studi database',
-            interval: '1 minute',
-            enabled: true,
-            last_run: '2024-03-15T14:29:00Z',
-            next_run: '2024-03-15T14:30:00Z',
-            status: 'running'
-        },
-        {
-            id: 'cleanup_logs',
-            name: 'Log Cleanup',
-            description: 'Removes old logs older than 30 days',
-            interval: '1 day',
-            enabled: true,
-            last_run: '2024-03-14T00:00:00Z',
-            next_run: '2024-03-16T00:00:00Z',
-            status: 'idle'
-        },
-        {
-            id: 'backup_database',
-            name: 'Database Backup',
-            description: 'Creates automated database backups',
-            interval: '6 hours',
-            enabled: false,
-            last_run: '2024-03-15T08:00:00Z',
-            next_run: 'Disabled',
-            status: 'idle'
-        },
-        {
-            id: 'update_stats',
-            name: 'Statistics Update',
-            description: 'Updates bot and server statistics',
-            interval: '15 minutes',
-            enabled: true,
-            last_run: '2024-03-15T14:15:00Z',
-            next_run: '2024-03-15T14:30:00Z',
-            status: 'running'
-        }
-    ]);
-
+    const [tasks, setTasks] = useState<ScheduledTask[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [config, setConfig] = useState({
+        max_concurrent_tasks: 5,
+        task_timeout: 300,
+        retry_attempts: 3
+    });
+    const [logs, setLogs] = useState<any[]>([]);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [newTask, setNewTask] = useState({
+        name: '',
+        description: '',
+        interval: '',
+        enabled: true
+    });
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -84,24 +48,166 @@ export default function TaskScheduler() {
         return () => clearInterval(timer);
     }, []);
 
-    const toggleTask = (taskId: string) => {
-        setTasks(tasks.map(task => 
-            task.id === taskId 
-                ? { ...task, enabled: !task.enabled }
-                : task
-        ));
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        setIsLoading(true);
+        try {
+            await Promise.all([
+                loadTasks(),
+                loadConfig(),
+                loadLogs()
+            ]);
+        } catch (error) {
+            console.error('Failed to load scheduler data:', error);
+            setError('Failed to load scheduler data');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const executeTask = (taskId: string) => {
-        setTasks(tasks.map(task => 
-            task.id === taskId 
-                ? { 
-                    ...task, 
-                    last_run: new Date().toISOString(),
-                    status: 'running'
+    const loadTasks = async () => {
+        try {
+            const response = await apiClient.get('/api/discord/scheduler');
+            if (response.data.success) {
+                setTasks(response.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to load tasks:', error);
+        }
+    };
+
+    const loadConfig = async () => {
+        try {
+            const response = await apiClient.get('/api/discord/scheduler/config');
+            if (response.data.success) {
+                setConfig(response.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to load config:', error);
+        }
+    };
+
+    const loadLogs = async () => {
+        try {
+            const response = await apiClient.get('/api/discord/scheduler/logs');
+            if (response.data.success) {
+                setLogs(response.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to load logs:', error);
+        }
+    };
+
+    const toggleTask = async (taskId: string) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        try {
+            const response = await apiClient.put(`/api/discord/scheduler/${taskId}/toggle`, {
+                enabled: !task.enabled
+            });
+            
+            if (response.data.success) {
+                setTasks(tasks.map(t => 
+                    t.id === taskId 
+                        ? { ...t, enabled: !t.enabled }
+                        : t
+                ));
+            }
+        } catch (error) {
+            console.error('Failed to toggle task:', error);
+        }
+    };
+
+    const executeTask = async (taskId: string) => {
+        try {
+            const response = await apiClient.post(`/api/discord/scheduler/${taskId}/execute`);
+            
+            if (response.data.success) {
+                setTasks(tasks.map(task => 
+                    task.id === taskId 
+                        ? { 
+                            ...task, 
+                            last_run: new Date().toISOString(),
+                            status: 'running'
+                        }
+                        : task
+                ));
+                
+                await loadLogs();
+            }
+        } catch (error) {
+            console.error('Failed to execute task:', error);
+        }
+    };
+
+    const updateConfiguration = async () => {
+        try {
+            const response = await apiClient.put('/api/discord/scheduler/config', config);
+            if (response.data.success) {
+                console.log('Configuration updated successfully');
+            }
+        } catch (error) {
+            console.error('Failed to update configuration:', error);
+        }
+    };
+
+    const performSystemOperation = async (action: string) => {
+        try {
+            const response = await apiClient.post('/api/discord/scheduler/system-operation', {
+                action: action
+            });
+            
+            if (response.data.success) {
+                await loadLogs();
+                if (action === 'pause_all' || action === 'resume_all') {
+                    await loadTasks();
                 }
-                : task
-        ));
+            }
+        } catch (error) {
+            console.error('Failed to perform system operation:', error);
+        }
+    };
+
+    const createTask = async () => {
+        if (!newTask.name || !newTask.description || !newTask.interval) {
+            setError('Tous les champs sont requis');
+            return;
+        }
+
+        try {
+            const response = await apiClient.post('/api/discord/scheduler', newTask);
+            
+            if (response.data.success) {
+                await loadTasks();
+                setNewTask({ name: '', description: '', interval: '', enabled: true });
+                setShowAddForm(false);
+                setError('');
+            }
+        } catch (error) {
+            console.error('Failed to create task:', error);
+            setError('Erreur lors de la création de la tâche');
+        }
+    };
+
+    const deleteTask = async (taskId: string) => {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+            return;
+        }
+
+        try {
+            const response = await apiClient.delete(`/api/discord/scheduler/${taskId}`);
+            
+            if (response.data.success) {
+                await loadTasks();
+            }
+        } catch (error) {
+            console.error('Failed to delete task:', error);
+            setError('Erreur lors de la suppression de la tâche');
+        }
     };
 
     const getStatusColor = (status: string) => {
@@ -183,14 +289,108 @@ export default function TaskScheduler() {
                     </div>
                 </div>
 
+                {/* Add Task Form */}
+                {showAddForm && (
+                    <div className="glass-card p-6 border-primary/30 bg-primary/5">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-lg font-bold text-gradient">
+                                CREATE NEW TASK
+                            </h2>
+                            <button 
+                                onClick={() => setShowAddForm(false)}
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label className="text-xs font-mono text-muted-foreground mb-2 block">TASK NAME</label>
+                                <input
+                                    type="text"
+                                    value={newTask.name}
+                                    onChange={(e) => setNewTask({...newTask, name: e.target.value})}
+                                    className="w-full p-3 bg-background/50 border border-border rounded-lg font-mono text-sm"
+                                    placeholder="e.g., BACKUP_LOGS"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-mono text-muted-foreground mb-2 block">INTERVAL</label>
+                                <input
+                                    type="text"
+                                    value={newTask.interval}
+                                    onChange={(e) => setNewTask({...newTask, interval: e.target.value})}
+                                    className="w-full p-3 bg-background/50 border border-border rounded-lg font-mono text-sm"
+                                    placeholder="e.g., Every 30 minutes"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="text-xs font-mono text-muted-foreground mb-2 block">DESCRIPTION</label>
+                            <textarea
+                                value={newTask.description}
+                                onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                                className="w-full p-3 bg-background/50 border border-border rounded-lg font-mono text-sm h-20"
+                                placeholder="Describe what this task does..."
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={newTask.enabled}
+                                    onChange={(e) => setNewTask({...newTask, enabled: e.target.checked})}
+                                    className="w-4 h-4"
+                                />
+                                <label className="text-sm font-mono">Enable immediately</label>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowAddForm(false)}
+                                    className="px-6 py-2 border border-border rounded-lg text-sm font-mono hover:bg-secondary/20"
+                                >
+                                    CANCEL
+                                </button>
+                                <button
+                                    onClick={createTask}
+                                    className="cyber-button px-6 py-2 rounded-lg text-sm font-medium"
+                                >
+                                    CREATE TASK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Error Display */}
+                {error && (
+                    <div className="glass-card p-4 border-destructive/30 bg-destructive/5">
+                        <div className="text-destructive font-mono text-sm">
+                            ⚠️ {error}
+                        </div>
+                    </div>
+                )}
+
                 {/* Task List */}
                 <div className="glass-card p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-bold text-gradient">
                             SCHEDULED TASKS
                         </h2>
-                        <div className="text-xs font-mono text-muted-foreground">
-                            EXECUTION QUEUE
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setShowAddForm(true)}
+                                className="cyber-button px-4 py-2 rounded-lg text-xs font-medium"
+                            >
+                                + NEW TASK
+                            </button>
+                            <div className="text-xs font-mono text-muted-foreground">
+                                EXECUTION QUEUE
+                            </div>
                         </div>
                     </div>
 
@@ -256,6 +456,14 @@ export default function TaskScheduler() {
                                         >
                                             EXECUTE NOW
                                         </button>
+
+                                        <button
+                                            onClick={() => deleteTask(task.id)}
+                                            className="text-destructive hover:text-destructive/80 px-2 py-1 text-xs font-mono"
+                                            title="Delete Task"
+                                        >
+                                            DELETE
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -278,7 +486,8 @@ export default function TaskScheduler() {
                                 </div>
                                 <input
                                     type="number"
-                                    defaultValue={5}
+                                    value={config.max_concurrent_tasks}
+                                    onChange={(e) => setConfig({...config, max_concurrent_tasks: parseInt(e.target.value)})}
                                     className="w-20 p-2 bg-background/50 border border-border rounded font-mono text-sm text-center"
                                 />
                             </div>
@@ -290,7 +499,8 @@ export default function TaskScheduler() {
                                 </div>
                                 <input
                                     type="number"
-                                    defaultValue={300}
+                                    value={config.task_timeout}
+                                    onChange={(e) => setConfig({...config, task_timeout: parseInt(e.target.value)})}
                                     className="w-20 p-2 bg-background/50 border border-border rounded font-mono text-sm text-center"
                                 />
                             </div>
@@ -302,13 +512,17 @@ export default function TaskScheduler() {
                                 </div>
                                 <input
                                     type="number"
-                                    defaultValue={3}
+                                    value={config.retry_attempts}
+                                    onChange={(e) => setConfig({...config, retry_attempts: parseInt(e.target.value)})}
                                     className="w-20 p-2 bg-background/50 border border-border rounded font-mono text-sm text-center"
                                 />
                             </div>
                         </div>
                         
-                        <button className="cyber-button px-6 py-3 rounded-lg text-sm font-medium w-full mt-6">
+                        <button 
+                            onClick={updateConfiguration}
+                            className="cyber-button px-6 py-3 rounded-lg text-sm font-medium w-full mt-6"
+                        >
                             UPDATE CONFIGURATION
                         </button>
                     </div>
@@ -320,14 +534,16 @@ export default function TaskScheduler() {
                         </h3>
                         <div className="terminal">
                             <div className="space-y-1 text-xs">
-                                <div className="text-success">[{currentTime.toLocaleTimeString()}] DATABASE_SYNC: Execution completed successfully</div>
-                                <div className="text-success">[{new Date(Date.now() - 30000).toLocaleTimeString()}] STUDI_CHECK: 15 users verified</div>
-                                <div className="text-warning">[{new Date(Date.now() - 60000).toLocaleTimeString()}] UPDATE_STATS: Performance degraded, retry scheduled</div>
-                                <div className="text-success">[{new Date(Date.now() - 120000).toLocaleTimeString()}] DATABASE_SYNC: 247 records synchronized</div>
-                                <div className="text-primary">[{new Date(Date.now() - 180000).toLocaleTimeString()}] CLEANUP_LOGS: Purged 1,247 old entries</div>
-                                <div className="text-success">[{new Date(Date.now() - 240000).toLocaleTimeString()}] STUDI_CHECK: All checks passed</div>
-                                <div className="text-success">[{new Date(Date.now() - 300000).toLocaleTimeString()}] UPDATE_STATS: Statistics refreshed</div>
-                                <div className="text-success">[{new Date(Date.now() - 360000).toLocaleTimeString()}] DATABASE_SYNC: Incremental sync completed</div>
+                                {logs.map((log, index) => (
+                                    <div key={index} className={`${
+                                        log.level === 'success' ? 'text-success' :
+                                        log.level === 'warning' ? 'text-warning' :
+                                        log.level === 'info' ? 'text-primary' :
+                                        'text-destructive'
+                                    }`}>
+                                        [{log.timestamp}] {log.task}: {log.message}
+                                    </div>
+                                ))}
                             </div>
                         </div>
                         
@@ -346,16 +562,28 @@ export default function TaskScheduler() {
                 <div className="glass-card p-6">
                     <div className="metric-label mb-6">System Operations</div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <button className="cyber-button px-4 py-3 rounded-lg text-sm font-medium">
+                        <button 
+                            onClick={() => performSystemOperation('pause_all')}
+                            className="cyber-button px-4 py-3 rounded-lg text-sm font-medium"
+                        >
                             Pause All Tasks
                         </button>
-                        <button className="cyber-button px-4 py-3 rounded-lg text-sm font-medium">
+                        <button 
+                            onClick={() => performSystemOperation('resume_all')}
+                            className="cyber-button px-4 py-3 rounded-lg text-sm font-medium"
+                        >
                             Resume All Tasks
                         </button>
-                        <button className="cyber-button px-4 py-3 rounded-lg text-sm font-medium">
+                        <button 
+                            onClick={() => performSystemOperation('restart')}
+                            className="cyber-button px-4 py-3 rounded-lg text-sm font-medium"
+                        >
                             System Restart
                         </button>
-                        <button className="cyber-button px-4 py-3 rounded-lg text-sm font-medium">
+                        <button 
+                            onClick={() => performSystemOperation('cleanup')}
+                            className="cyber-button px-4 py-3 rounded-lg text-sm font-medium"
+                        >
                             Force Cleanup
                         </button>
                     </div>

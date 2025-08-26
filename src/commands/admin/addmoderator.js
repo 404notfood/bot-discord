@@ -45,7 +45,7 @@ export class AddModeratorCommand extends BaseCommand {
             if (!interaction.client.databaseManager || !interaction.client.databaseManager.isAvailable()) {
                 const embed = new EmbedBuilder()
                     .setTitle('❌ Base de données non disponible')
-                    .setDescription('Impossible d\\'ajouter des modérateurs. La base de données n\\'est pas accessible.')
+                    .setDescription('Impossible d ajouter des modérateurs. La base de données n est pas accessible.')
                     .setColor('#e74c3c')
                     .setTimestamp();
                 

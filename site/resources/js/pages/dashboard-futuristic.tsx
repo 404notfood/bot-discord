@@ -3,7 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '@/lib/axios-config';
 
 interface DashboardStats {
     bot: {
@@ -94,9 +94,35 @@ export default function DashboardFuturistic() {
 
     const fetchDashboardStats = async () => {
         try {
-            const response = await axios.get('/api/discord/stats/dashboard')
+            const response = await apiClient.get('/api/discord/stats/dashboard')
             if (response.data.success) {
-                setStats(response.data.data)
+                const apiData = response.data.data
+                // Adapter les données de l'API vers l'interface attendue
+                const adaptedStats = {
+                    bot: {
+                        status: botStatus?.running ? 'online' as const : 'offline' as const,
+                        uptime: botStatus?.uptime || '--',
+                        servers: 1, // Valeur fixe pour l'instant
+                        users: apiData.stats.total_members || 0,
+                        commands_today: 0 // À implémenter
+                    },
+                    projects: {
+                        total: apiData.stats.total_projects || 0,
+                        active: 0, // Calculé à partir des active_projects
+                        completed: 0
+                    },
+                    studi: {
+                        banned_users: 0, // À récupérer depuis l'API studi
+                        whitelist_users: 0,
+                        checks_today: 0
+                    },
+                    system: {
+                        database: 'healthy' as const,
+                        api: 'healthy' as const,
+                        scheduler: 'running' as const
+                    }
+                }
+                setStats(adaptedStats)
             }
         } catch (error) {
             console.error('Failed to fetch dashboard stats:', error)
@@ -105,9 +131,18 @@ export default function DashboardFuturistic() {
 
     const fetchBotStatus = async () => {
         try {
-            const response = await axios.get('/api/discord/bot-control/status')
+            const response = await apiClient.get('/api/discord/bot-control/status')
             if (response.data.success) {
                 setBotStatus(response.data.data)
+                // Mettre à jour le statut du bot dans les stats
+                setStats(prev => ({
+                    ...prev,
+                    bot: {
+                        ...prev.bot,
+                        status: response.data.data.running ? 'online' as const : 'offline' as const,
+                        uptime: response.data.data.uptime || '--'
+                    }
+                }))
             }
         } catch (error) {
             console.error('Failed to fetch bot status:', error)
@@ -117,7 +152,7 @@ export default function DashboardFuturistic() {
     const startBot = async () => {
         setIsLoading(true)
         try {
-            const response = await axios.post('/api/discord/bot-control/start')
+            const response = await apiClient.post('/api/discord/bot-control/start')
             if (response.data.success) {
                 await fetchBotStatus() // Refresh status
             }
@@ -131,7 +166,7 @@ export default function DashboardFuturistic() {
     const stopBot = async () => {
         setIsLoading(true)
         try {
-            const response = await axios.post('/api/discord/bot-control/stop')
+            const response = await apiClient.post('/api/discord/bot-control/stop')
             if (response.data.success) {
                 await fetchBotStatus() // Refresh status
             }
@@ -145,7 +180,7 @@ export default function DashboardFuturistic() {
     const restartBot = async () => {
         setIsLoading(true)
         try {
-            const response = await axios.post('/api/discord/bot-control/restart')
+            const response = await apiClient.post('/api/discord/bot-control/restart')
             if (response.data.success) {
                 await fetchBotStatus() // Refresh status
             }
@@ -158,7 +193,7 @@ export default function DashboardFuturistic() {
 
     const viewLogs = async () => {
         try {
-            const response = await axios.get('/api/discord/bot-control/logs')
+            const response = await apiClient.get('/api/discord/bot-control/logs')
             if (response.data.success) {
                 // Open logs in a new window or modal
                 const logWindow = window.open('', '_blank')

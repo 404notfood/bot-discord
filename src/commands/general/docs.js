@@ -67,9 +67,20 @@ export default {
 
             if (!cacheService) {
                 return interaction.reply({
-                    content: '❌ Service de documentation non disponible',
+                    content: '❌ Service de documentation non disponible. La base de données n\'est peut-être pas accessible.',
                     ephemeral: true
                 });
+            }
+
+            // Vérifier si la base de données est disponible
+            if (!dbManager || !dbManager.isAvailable()) {
+                await interaction.reply({
+                    content: '⚠️ Base de données non disponible. Voici quelques ressources de documentation populaires :',
+                    ephemeral: !isPublic
+                });
+                
+                const fallbackEmbed = this.createFallbackDocumentation();
+                return interaction.followUp({ embeds: [fallbackEmbed], ephemeral: !isPublic });
             }
 
             await interaction.deferReply({ ephemeral: !isPublic });
@@ -232,6 +243,43 @@ export default {
             chunks.push(array.slice(i, i + size));
         }
         return chunks;
+    },
+
+    /**
+     * Crée une documentation de fallback quand la DB n'est pas disponible
+     */
+    createFallbackDocumentation() {
+        const embed = new EmbedBuilder()
+            .setTitle('📚 Documentation - Ressources Essentielles')
+            .setDescription('Voici une sélection de ressources de documentation populaires.')
+            .setColor('#e67e22')
+            .setTimestamp()
+            .addFields(
+                {
+                    name: '🌐 Frontend',
+                    value: '[MDN Web Docs](https://developer.mozilla.org/fr/) - HTML, CSS, JavaScript\n' +
+                          '[W3Schools](https://www.w3schools.com/) - Tutoriels web complets\n' +
+                          '[React Docs](https://react.dev/) - Documentation React officielle',
+                    inline: false
+                },
+                {
+                    name: '🖥️ Backend',
+                    value: '[Node.js Docs](https://nodejs.org/docs/) - Documentation Node.js\n' +
+                          '[Python Docs](https://docs.python.org/3/) - Documentation Python officielle\n' +
+                          '[PHP Manual](https://www.php.net/manual/fr/) - Manuel PHP complet',
+                    inline: false
+                },
+                {
+                    name: '🗄️ Bases de données',
+                    value: '[MySQL Docs](https://dev.mysql.com/doc/) - Documentation MySQL\n' +
+                          '[PostgreSQL Docs](https://www.postgresql.org/docs/) - Documentation PostgreSQL\n' +
+                          '[MongoDB Docs](https://docs.mongodb.com/) - Documentation MongoDB',
+                    inline: false
+                }
+            )
+            .setFooter({ text: 'Service de documentation en mode réduit' });
+
+        return embed;
     },
 
     // Alias pour compatibilité

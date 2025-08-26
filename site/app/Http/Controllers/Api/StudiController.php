@@ -23,9 +23,8 @@ class StudiController extends Controller
             if (!$config) {
                 $config = StudiConfig::create([
                     'is_enabled' => false,
-                    'check_new_members' => true,
-                    'auto_ban' => false,
-                    'log_checks' => true,
+                    'max_offenses' => 3,
+                    'ban_duration_hours' => 24,
                     'whitelist_enabled' => true
                 ]);
             }
@@ -50,9 +49,8 @@ class StudiController extends Controller
     {
         $validated = $request->validate([
             'is_enabled' => 'boolean',
-            'check_new_members' => 'boolean',
-            'auto_ban' => 'boolean',
-            'log_checks' => 'boolean',
+            'max_offenses' => 'integer|min:1|max:10',
+            'ban_duration_hours' => 'integer|min:1|max:168',
             'whitelist_enabled' => 'boolean'
         ]);
 
@@ -93,17 +91,14 @@ class StudiController extends Controller
 
             $status = [
                 'system_enabled' => $config?->is_enabled ?? false,
-                'auto_ban_enabled' => $config?->auto_ban ?? false,
                 'whitelist_enabled' => $config?->whitelist_enabled ?? false,
+                'max_offenses' => $config?->max_offenses ?? 3,
+                'ban_duration_hours' => $config?->ban_duration_hours ?? 24,
                 'statistics' => [
                     'banned_users' => $bannedCount,
                     'whitelisted_users' => $whitelistCount,
                     'total_checks' => $totalChecks,
                     'last_check' => $lastCheck
-                ],
-                'settings' => [
-                    'check_new_members' => $config?->check_new_members ?? true,
-                    'log_checks' => $config?->log_checks ?? true
                 ]
             ];
 
@@ -384,9 +379,8 @@ class StudiController extends Controller
             if (!StudiConfig::exists()) {
                 StudiConfig::create([
                     'is_enabled' => false,
-                    'check_new_members' => true,
-                    'auto_ban' => false,
-                    'log_checks' => true,
+                    'max_offenses' => 3,
+                    'ban_duration_hours' => 24,
                     'whitelist_enabled' => true
                 ]);
             }

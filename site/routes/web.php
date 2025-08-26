@@ -30,6 +30,11 @@ Route::get('/test-models', function () {
     }
 });
 
+// Test simple documentation SANS authentification
+Route::get('documentation', function () {
+    return response()->json(['message' => 'Documentation route works!', 'timestamp' => now()]);
+})->name('documentation.index');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Main Dashboard - Now using the futuristic version
     Route::get('dashboard', function () {
@@ -53,23 +58,48 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return inertia('task-scheduler');
     })->name('task-scheduler');
     
-    // Routes pour la gestion des membres
-    Route::get('members', [App\Http\Controllers\MembersController::class, 'index'])->name('members.index');
-    Route::get('members/{id}', [App\Http\Controllers\MembersController::class, 'show'])->name('members.show');
-    Route::put('members/{id}', [App\Http\Controllers\MembersController::class, 'update'])->name('members.update');
+    // Routes pour les pages avec design futuriste
+    Route::get('members', function () {
+        return inertia('members');
+    })->name('members.index');
     
-    // Routes pour les logs de modération
-    Route::get('logs', [App\Http\Controllers\LogsController::class, 'index'])->name('logs.index');
-    Route::get('logs/{id}', [App\Http\Controllers\LogsController::class, 'show'])->name('logs.show');
+    Route::get('logs', function () {
+        return inertia('logs');
+    })->name('logs.index');
     
-    // Routes pour la configuration
-    Route::get('config', [App\Http\Controllers\ConfigController::class, 'index'])->name('config.index');
-    Route::put('config', [App\Http\Controllers\ConfigController::class, 'update'])->name('config.update');
+    Route::get('config', function () {
+        return inertia('config');
+    })->name('config.index');
     
-    // Routes pour les projets
-    Route::get('projects', [App\Http\Controllers\ProjectsController::class, 'index'])->name('projects.index');
-    Route::get('projects/{id}', [App\Http\Controllers\ProjectsController::class, 'show'])->name('projects.show');
-    Route::put('projects/{id}', [App\Http\Controllers\ProjectsController::class, 'update'])->name('projects.update');
+    Route::get('projects', function () {
+        return inertia('projects');
+    })->name('projects.index');
+    
+    // Routes de gestion de la documentation - Temporairement désactivées
+    /*
+    Route::prefix('documentation')->name('documentation.')->group(function () {
+        // Gestion des catégories
+        Route::resource('categories', \App\Http\Controllers\DocCategoryController::class, [
+            'as' => 'doc-categories'
+        ]);
+        Route::post('categories/{docCategory}/toggle-active', [\App\Http\Controllers\DocCategoryController::class, 'toggleActive'])
+             ->name('doc-categories.toggle-active');
+        Route::post('categories/reorder', [\App\Http\Controllers\DocCategoryController::class, 'reorder'])
+             ->name('doc-categories.reorder');
+        
+        // Gestion des ressources
+        Route::resource('resources', \App\Http\Controllers\DocResourceController::class, [
+            'as' => 'doc-resources'
+        ]);
+        Route::post('resources/{docResource}/toggle-active', [\App\Http\Controllers\DocResourceController::class, 'toggleActive'])
+             ->name('doc-resources.toggle-active');
+        Route::post('resources/{docResource}/duplicate', [\App\Http\Controllers\DocResourceController::class, 'duplicate'])
+             ->name('doc-resources.duplicate');
+        Route::get('resources-export', [\App\Http\Controllers\DocResourceController::class, 'export'])
+             ->name('doc-resources.export');
+    });
+    */
+    
 });
 
 require __DIR__.'/settings.php';

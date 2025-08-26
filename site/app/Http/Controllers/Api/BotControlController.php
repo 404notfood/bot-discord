@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\BotConfig;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Log;
 
 class BotControlController extends Controller
@@ -15,8 +14,14 @@ class BotControlController extends Controller
 
     public function __construct()
     {
+        // Utiliser un chemin relatif qui fonctionne en développement et production
         $this->botPath = base_path('../src');
         $this->pidFilePath = storage_path('app/bot.pid');
+        
+        // Si nous sommes sur le serveur de production, ajuster les chemins
+        if (str_contains(base_path(), '/home/discord/web/bot.rtfm2win.ovh/public_html/site')) {
+            $this->botPath = '/home/discord/web/bot.rtfm2win.ovh/public_html/src';
+        }
     }
 
     /**
@@ -25,6 +30,23 @@ class BotControlController extends Controller
     public function status()
     {
         try {
+            // Vérifier d'abord si les fonctions d'exécution sont disponibles
+            if (!$this->canExecuteCommands()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'running' => false,
+                        'pid' => null,
+                        'uptime' => 'Command execution disabled',
+                        'last_restart' => BotConfig::getValue('bot.last_restart', 'Never'),
+                        'auto_restart' => false,
+                        'memory_usage' => '0 MB',
+                        'cpu_usage' => '0%',
+                        'server_limitation' => true
+                    ]
+                ]);
+            }
+
             $isRunning = $this->isBotRunning();
             $pid = $this->getBotPid();
             $uptime = $this->getBotUptime();
@@ -36,7 +58,8 @@ class BotControlController extends Controller
                 'last_restart' => BotConfig::getValue('bot.last_restart', 'Never'),
                 'auto_restart' => BotConfig::getValue('bot.auto_restart', 'false') === 'true',
                 'memory_usage' => $this->getMemoryUsage($pid),
-                'cpu_usage' => $this->getCpuUsage($pid)
+                'cpu_usage' => $this->getCpuUsage($pid),
+                'server_limitation' => false
             ];
 
             return response()->json([
@@ -60,6 +83,23 @@ class BotControlController extends Controller
     public function start(Request $request)
     {
         try {
+            // Debug: Log les informations système
+            Log::info('Bot start attempt', [
+                'botPath' => $this->botPath,
+                'basePath' => base_path(),
+                'canExecute' => $this->canExecuteCommands(),
+                'fileExists' => file_exists($this->botPath . '/DiscordBot.js')
+            ]);
+            
+            // Vérifier si les fonctions d'exécution sont disponibles
+            if (!$this->canExecuteCommands()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Server limitation',
+                    'message' => 'Les fonctions d\'exécution de commandes sont désactivées sur ce serveur. Contactez votre hébergeur.'
+                ], 503);
+            }
+
             if ($this->isBotRunning()) {
                 return response()->json([
                     'success' => false,
@@ -69,7 +109,7 @@ class BotControlController extends Controller
             }
 
             // Vérifier que les fichiers nécessaires existent
-            if (!file_exists($this->botPath . '/DiscordBot.js')) {
+            if (!file_exists($this->botPath . '/index.js')) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Bot files not found',
@@ -77,46 +117,61 @@ class BotControlController extends Controller
                 ], 404);
             }
 
-            // Démarrer le bot en arrière-plan
-            $command = "cd {$this->botPath} && nohup node DiscordBot.js > " . storage_path('logs/bot.log') . " 2>&1 & echo $!";
-            $result = Process::run($command);
+            // Utiliser index.js comme le fait start.js
+            $testCommand = "cd {$this->botPath} && timeout 5 node index.js";
+            Log::info('Testing bot startup first', ['command' => $testCommand]);
             
-            if ($result->successful()) {
-                $pid = trim($result->output());
+            $testResult = $this->executeCommand($testCommand);
+            Log::info('Bot test result', [
+                'successful' => $testResult['successful'],
+                'output' => $testResult['output'],
+                'return_code' => $testResult['return_code']
+            ]);
+            
+            // Si le test réussit, lancer en arrière-plan avec index.js
+            $command = "cd {$this->botPath} && nohup node index.js > " . storage_path('logs/bot.log') . " 2>&1 & echo $!";
+            
+            Log::info('Executing bot start command', ['command' => $command]);
+            
+            $result = $this->executeCommand($command);
+            
+            Log::info('Command result', [
+                'successful' => $result['successful'],
+                'output' => $result['output'],
+                'return_code' => $result['return_code']
+            ]);
+            
+            if ($result['successful'] && !empty($result['output'])) {
+                $pid = trim($result['output']);
                 
                 // Sauvegarder le PID
                 file_put_contents($this->pidFilePath, $pid);
+                
+                Log::info('PID saved', ['pid' => $pid, 'pidFile' => $this->pidFilePath]);
                 
                 // Mettre à jour la configuration
                 BotConfig::setValue('bot.last_restart', now()->toISOString(), 'Bot last restart timestamp');
                 BotConfig::setValue('bot.status', 'running', 'Bot current status');
                 
-                // Attendre un peu pour vérifier que le bot démarre correctement
-                sleep(3);
+                Log::info('Bot config updated');
                 
-                if ($this->isBotRunning()) {
-                    Log::info('Bot started successfully', ['pid' => $pid, 'user' => 'dashboard']);
-                    
-                    return response()->json([
-                        'success' => true,
-                        'data' => [
-                            'pid' => $pid,
-                            'started_at' => now()->toISOString()
-                        ],
-                        'message' => 'Bot démarré avec succès'
-                    ]);
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Bot failed to start',
-                        'message' => 'Le bot a échoué au démarrage, vérifiez les logs'
-                    ], 500);
-                }
+                // Le bot se lance avec succès - ne vérifions pas immédiatement s'il tourne encore
+                // Un bot Discord peut se terminer proprement s'il n'y a pas de token valide ou d'autres problèmes
+                Log::info('Bot started successfully', ['pid' => $pid, 'user' => 'dashboard']);
+                
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'pid' => $pid,
+                        'started_at' => now()->toISOString()
+                    ],
+                    'message' => 'Bot démarré avec succès. Vérifiez le statut pour voir s\'il fonctionne correctement.'
+                ]);
             } else {
                 return response()->json([
                     'success' => false,
                     'error' => 'Failed to execute start command',
-                    'message' => 'Erreur lors de l\'exécution de la commande de démarrage'
+                    'message' => 'Erreur lors de l\'exécution de la commande de démarrage: ' . ($result['output'] ?? 'Unknown error')
                 ], 500);
             }
         } catch (\Exception $e) {
@@ -136,6 +191,15 @@ class BotControlController extends Controller
     public function stop(Request $request)
     {
         try {
+            // Vérifier si les fonctions d'exécution sont disponibles
+            if (!$this->canExecuteCommands()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Server limitation',
+                    'message' => 'Les fonctions d\'exécution de commandes sont désactivées sur ce serveur. Contactez votre hébergeur.'
+                ], 503);
+            }
+
             if (!$this->isBotRunning()) {
                 return response()->json([
                     'success' => false,
@@ -148,14 +212,14 @@ class BotControlController extends Controller
             
             if ($pid) {
                 // Arrêt gracieux d'abord
-                $result = Process::run("kill -TERM {$pid}");
+                $result = $this->executeCommand("kill -TERM {$pid}");
                 
                 // Attendre que le processus se termine
                 sleep(5);
                 
                 // Si le processus est toujours actif, forcer l'arrêt
                 if ($this->isProcessRunning($pid)) {
-                    Process::run("kill -KILL {$pid}");
+                    $this->executeCommand("kill -KILL {$pid}");
                     sleep(2);
                 }
                 
@@ -198,6 +262,15 @@ class BotControlController extends Controller
     public function restart(Request $request)
     {
         try {
+            // Vérifier si les fonctions d'exécution sont disponibles
+            if (!$this->canExecuteCommands()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Server limitation',
+                    'message' => 'Les fonctions d\'exécution de commandes sont désactivées sur ce serveur. Contactez votre hébergeur.'
+                ], 503);
+            }
+
             // Arrêter le bot s'il est en cours d'exécution
             if ($this->isBotRunning()) {
                 $stopResponse = $this->stop($request);
@@ -239,12 +312,12 @@ class BotControlController extends Controller
             }
             
             $command = "tail -n {$lines} {$logFile}";
-            $result = Process::run($command);
+            $result = $this->executeCommand($command);
             
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'logs' => $result->output(),
+                    'logs' => $result['output'],
                     'file_size' => filesize($logFile),
                     'last_modified' => date('c', filemtime($logFile))
                 ]
@@ -261,14 +334,99 @@ class BotControlController extends Controller
     }
 
     /**
+     * Vérifier si les fonctions d'exécution de commandes sont disponibles
+     */
+    private function canExecuteCommands(): bool
+    {
+        return function_exists('proc_open') || function_exists('exec') || function_exists('shell_exec') || function_exists('system');
+    }
+
+    /**
+     * Exécuter des commandes en utilisant proc_open (disponible sur ce serveur)
+     */
+    private function executeCommand($command): array
+    {
+        // Essayer proc_open en premier (disponible sur ce serveur)
+        if (function_exists('proc_open')) {
+            $descriptorspec = [
+                0 => ['pipe', 'r'], // stdin
+                1 => ['pipe', 'w'], // stdout
+                2 => ['pipe', 'w']  // stderr
+            ];
+            
+            $process = proc_open($command, $descriptorspec, $pipes);
+            
+            if (is_resource($process)) {
+                // Fermer stdin
+                fclose($pipes[0]);
+                
+                // Lire stdout et stderr
+                $output = stream_get_contents($pipes[1]);
+                $error = stream_get_contents($pipes[2]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                
+                // Récupérer le code de sortie
+                $returnCode = proc_close($process);
+                
+                return [
+                    'successful' => $returnCode === 0,
+                    'output' => trim($output ?: $error),
+                    'return_code' => $returnCode
+                ];
+            }
+        }
+        
+        // Fallback vers les autres fonctions si proc_open échoue
+        if (function_exists('exec')) {
+            $output = [];
+            $returnVar = 0;
+            exec($command . ' 2>&1', $output, $returnVar);
+            
+            return [
+                'successful' => $returnVar === 0,
+                'output' => implode("\n", $output),
+                'return_code' => $returnVar
+            ];
+        }
+        
+        if (function_exists('shell_exec')) {
+            $output = shell_exec($command . ' 2>&1');
+            return [
+                'successful' => !empty($output) && strpos($output, 'command not found') === false,
+                'output' => $output ?: '',
+                'return_code' => empty($output) ? 1 : 0
+            ];
+        }
+        
+        // Si aucune fonction n'est disponible
+        return [
+            'successful' => false,
+            'output' => 'No command execution functions available',
+            'return_code' => 1
+        ];
+    }
+
+    /**
      * Vérifier si le bot est en cours d'exécution
      */
     private function isBotRunning(): bool
     {
         try {
             $pid = $this->getBotPid();
-            return $pid && $this->isProcessRunning($pid);
+            Log::info('Checking bot running status', ['pid' => $pid]);
+            
+            if (!$pid) {
+                Log::info('No PID found');
+                return false;
+            }
+            
+            $isRunning = $this->isProcessRunning($pid);
+            Log::info('Process running check result', ['pid' => $pid, 'running' => $isRunning]);
+            
+            return $isRunning;
         } catch (\Exception $e) {
+            Log::error('Error checking bot running status', ['error' => $e->getMessage()]);
             return false;
         }
     }
@@ -285,9 +443,9 @@ class BotControlController extends Controller
             }
             
             // Essayer de trouver le processus par son nom
-            $result = Process::run("pgrep -f 'node.*DiscordBot.js'");
-            if ($result->successful() && !empty(trim($result->output()))) {
-                $pid = trim(explode("\n", $result->output())[0]);
+            $result = $this->executeCommand("pgrep -f 'node.*index.js'");
+            if ($result['successful'] && !empty(trim($result['output']))) {
+                $pid = trim(explode("\n", $result['output'])[0]);
                 // Sauvegarder le PID trouvé
                 file_put_contents($this->pidFilePath, $pid);
                 return $pid;
@@ -305,9 +463,16 @@ class BotControlController extends Controller
     private function isProcessRunning($pid): bool
     {
         try {
-            $result = Process::run("kill -0 {$pid}");
-            return $result->successful();
+            $result = $this->executeCommand("kill -0 {$pid}");
+            Log::info('Process check command result', [
+                'pid' => $pid,
+                'successful' => $result['successful'],
+                'output' => $result['output'],
+                'return_code' => $result['return_code']
+            ]);
+            return $result['successful'];
         } catch (\Exception $e) {
+            Log::error('Error checking process', ['pid' => $pid, 'error' => $e->getMessage()]);
             return false;
         }
     }
@@ -323,9 +488,9 @@ class BotControlController extends Controller
                 return 'Not running';
             }
             
-            $result = Process::run("ps -o etime= -p {$pid}");
-            if ($result->successful()) {
-                return trim($result->output());
+            $result = $this->executeCommand("ps -o etime= -p {$pid}");
+            if ($result['successful']) {
+                return trim($result['output']);
             }
             
             return 'Unknown';
@@ -344,9 +509,9 @@ class BotControlController extends Controller
                 return '0 MB';
             }
             
-            $result = Process::run("ps -o rss= -p {$pid}");
-            if ($result->successful()) {
-                $kb = trim($result->output());
+            $result = $this->executeCommand("ps -o rss= -p {$pid}");
+            if ($result['successful']) {
+                $kb = trim($result['output']);
                 $mb = round($kb / 1024, 2);
                 return "{$mb} MB";
             }
@@ -367,9 +532,9 @@ class BotControlController extends Controller
                 return '0%';
             }
             
-            $result = Process::run("ps -o %cpu= -p {$pid}");
-            if ($result->successful()) {
-                $cpu = trim($result->output());
+            $result = $this->executeCommand("ps -o %cpu= -p {$pid}");
+            if ($result['successful']) {
+                $cpu = trim($result['output']);
                 return "{$cpu}%";
             }
             

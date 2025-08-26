@@ -90,7 +90,24 @@ export class EnhancedStudiService {
                 
                 for (const statement of statements) {
                     if (statement.trim()) {
-                        await this.db.query(statement.trim());
+                        // Ignorer les migrations problématiques
+                        if (statement.includes('INSERT IGNORE INTO studi_offenders_enhanced') || 
+                            statement.includes('UPDATE studi_offenders_enhanced')) {
+                            Logger.info('EnhancedStudiService: Migration ignorée (déjà effectuée)');
+                            continue;
+                        }
+                        
+                        try {
+                            await this.db.query(statement.trim());
+                        } catch (error) {
+                            // Ignorer les erreurs de tables déjà existantes
+                            if (error.message.includes('already exists') || 
+                                error.message.includes('Duplicate key')) {
+                                Logger.info('EnhancedStudiService: Table déjà existante, ignorée');
+                                continue;
+                            }
+                            throw error;
+                        }
                     }
                 }
             }

@@ -22,128 +22,148 @@ INSERT INTO `bot_config` (`config_key`, `config_value`, `description`, `guild_id
 ('api.rate_limit', '100', 'Limite de requêtes par minute', NULL);
 
 -- =============================================================================
+-- ADMINISTRATEURS ET MODÉRATEURS PAR DÉFAUT
+-- =============================================================================
+
+-- Administrateur par défaut (votre ID Discord)
+INSERT INTO `bot_admins` (`user_id`, `username`, `added_by`, `added_at`) VALUES
+('709042879145836564', 'hansel_bwa', 'SYSTEM', NOW())
+ON DUPLICATE KEY UPDATE `username` = VALUES(`username`);
+
+-- Rôle administrateur par défaut
+INSERT INTO `bot_roles` (`user_id`, `role_type`, `granted_by`, `granted_at`, `is_active`) VALUES
+('709042879145836564', 'admin', 'SYSTEM', NOW(), 1)
+ON DUPLICATE KEY UPDATE `is_active` = 1;
+
+-- =============================================================================
 -- CONFIGURATION STUDI
 -- =============================================================================
 
 INSERT INTO `studi_config` (`is_enabled`, `max_offenses`, `ban_duration_hours`, `whitelist_enabled`) VALUES
-(false, 3, 24, true);
+(false, 3, 24, true)
+ON DUPLICATE KEY UPDATE `is_enabled` = VALUES(`is_enabled`);
+
+-- Configuration Studi par serveur par défaut
+INSERT INTO `studi_guild_config` (`guild_id`, `is_enabled`, `max_offenses`, `ban_duration_hours`, `created_at`, `updated_at`) VALUES
+('1258751748538105877', 0, 3, 24, NOW(), NOW())
+ON DUPLICATE KEY UPDATE `updated_at` = NOW();
 
 -- =============================================================================
 -- CATÉGORIES DE DOCUMENTATION
 -- =============================================================================
 
-INSERT INTO `doc_categories` (`name`, `description`, `parent_id`, `order_index`, `is_active`) VALUES
-('Frontend', 'Technologies frontend et interfaces utilisateur', NULL, 1, true),
-('Backend', 'Technologies backend et serveurs', NULL, 2, true),
-('Database', 'Bases de données et stockage', NULL, 3, true),
-('DevOps', 'Déploiement et infrastructure', NULL, 4, true),
-('Security', 'Sécurité informatique et pentesting', NULL, 5, true),
-('Tools', 'Outils de développement', NULL, 6, true),
+INSERT INTO `doc_categories` (`id`, `name`, `description`, `icon`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Frontend', 'Technologies pour le développement frontend', '🎨', 1, 1, NOW(), NOW()),
+(2, 'Backend', 'Technologies pour le développement backend', '⚙️', 2, 1, NOW(), NOW()),
+(3, 'Database', 'Systèmes de gestion de bases de données', '🗄️', 3, 1, NOW(), NOW()),
+(4, 'DevOps', 'Outils et technologies DevOps', '🚀', 4, 1, NOW(), NOW()),
+(5, 'Tools', 'Outils de développement', '🛠️', 5, 1, NOW(), NOW()),
+(6, 'Security', 'Sécurité informatique', '🔒', 6, 1, NOW(), NOW()),
 
 -- Sous-catégories Frontend
-('HTML', 'HyperText Markup Language', 1, 1, true),
-('CSS', 'Cascading Style Sheets', 1, 2, true),
-('JavaScript', 'Langage de programmation JavaScript', 1, 3, true),
-('React', 'Bibliothèque React', 1, 4, true),
-('Vue.js', 'Framework Vue.js', 1, 5, true),
-('Angular', 'Framework Angular', 1, 6, true),
-('Tailwind CSS', 'Framework CSS utilitaire', 1, 7, true),
-('Bootstrap', 'Framework CSS responsive', 1, 8, true),
-('SASS', 'Préprocesseur CSS', 1, 9, true),
-('TypeScript', 'Superset de JavaScript typé', 1, 10, true),
-('Webpack', 'Bundler de modules', 1, 11, true),
+(7, 'HTML', 'HyperText Markup Language', '📄', 1, 1, NOW(), NOW()),
+(8, 'CSS', 'Cascading Style Sheets', '🎨', 2, 1, NOW(), NOW()),
+(9, 'JavaScript', 'Langage de programmation JavaScript', '📜', 3, 1, NOW(), NOW()),
+(10, 'React', 'Bibliothèque React', '⚛️', 4, 1, NOW(), NOW()),
+(11, 'Vue.js', 'Framework Vue.js', '💚', 5, 1, NOW(), NOW()),
+(12, 'Angular', 'Framework Angular', '🔴', 6, 1, NOW(), NOW()),
+(13, 'Tailwind CSS', 'Framework CSS utilitaire', '🎨', 7, 1, NOW(), NOW()),
+(14, 'Bootstrap', 'Framework CSS responsive', '🎨', 8, 1, NOW(), NOW()),
+(15, 'SASS', 'Préprocesseur CSS', '🎨', 9, 1, NOW(), NOW()),
+(16, 'TypeScript', 'Superset de JavaScript typé', '📘', 10, 1, NOW(), NOW()),
+(17, 'Webpack', 'Bundler de modules', '📦', 11, 1, NOW(), NOW()),
 
 -- Sous-catégories Backend
-('PHP', 'Langage PHP', 2, 1, true),
-('Laravel', 'Framework PHP Laravel', 2, 2, true),
-('Symfony', 'Framework PHP Symfony', 2, 3, true),
-('Node.js', 'Runtime JavaScript côté serveur', 2, 4, true),
-('Express.js', 'Framework web pour Node.js', 2, 5, true),
-('Python', 'Langage Python', 2, 6, true),
-('Django', 'Framework web Python', 2, 7, true),
-('Flask', 'Micro-framework Python', 2, 8, true),
+(18, 'PHP', 'Langage PHP', '🐘', 1, 1, NOW(), NOW()),
+(19, 'Laravel', 'Framework PHP Laravel', '🔥', 2, 1, NOW(), NOW()),
+(20, 'Symfony', 'Framework PHP Symfony', '🎭', 3, 1, NOW(), NOW()),
+(21, 'Node.js', 'Runtime JavaScript côté serveur', '🟢', 4, 1, NOW(), NOW()),
+(22, 'Express.js', 'Framework web pour Node.js', '🚂', 5, 1, NOW(), NOW()),
+(23, 'Python', 'Langage Python', '🐍', 6, 1, NOW(), NOW()),
+(24, 'Django', 'Framework web Python', '🎸', 7, 1, NOW(), NOW()),
+(25, 'Flask', 'Micro-framework Python', '🍶', 8, 1, NOW(), NOW()),
 
 -- Sous-catégories Database
-('MySQL', 'Système de gestion de base de données', 3, 1, true),
-('PostgreSQL', 'Base de données relationnelle avancée', 3, 2, true),
-('MongoDB', 'Base de données NoSQL', 3, 3, true),
-('Redis', 'Store clé-valeur en mémoire', 3, 4, true),
-('SQLite', 'Base de données légère', 3, 5, true),
-('SQL', 'Langage de requête structuré', 3, 6, true),
+(26, 'MySQL', 'Système de gestion de base de données', '🐬', 1, 1, NOW(), NOW()),
+(27, 'PostgreSQL', 'Base de données relationnelle avancée', '🐘', 2, 1, NOW(), NOW()),
+(28, 'MongoDB', 'Base de données NoSQL', '🍃', 3, 1, NOW(), NOW()),
+(29, 'Redis', 'Store clé-valeur en mémoire', '🔴', 4, 1, NOW(), NOW()),
+(30, 'SQLite', 'Base de données légère', '📱', 5, 1, NOW(), NOW()),
+(31, 'SQL', 'Langage de requête structuré', '🗃️', 6, 1, NOW(), NOW()),
 
 -- Sous-catégories DevOps
-('Docker', 'Plateforme de conteneurisation', 4, 1, true),
-('Git', 'Système de contrôle de version', 4, 2, true),
-('Jenkins', 'Serveur d intégration continue', 4, 3, true),
-('Kubernetes', 'Orchestrateur de conteneurs', 4, 4, true),
+(32, 'Docker', 'Plateforme de conteneurisation', '🐳', 1, 1, NOW(), NOW()),
+(33, 'Git', 'Système de contrôle de version', '📚', 2, 1, NOW(), NOW()),
+(34, 'Jenkins', 'Serveur d intégration continue', '🤖', 3, 1, NOW(), NOW()),
+(35, 'Kubernetes', 'Orchestrateur de conteneurs', '⚓', 4, 1, NOW(), NOW()),
 
 -- Sous-catégories Security
-('OWASP', 'Projet de sécurité des applications web', 5, 1, true),
-('Kali Linux', 'Distribution Linux pour tests de pénétration', 5, 2, true),
-('HackTricks', 'Techniques et astuces de hacking éthique', 5, 3, true),
-('Pentest', 'Tests de pénétration', 5, 4, true),
-('Web Security Academy', 'Académie de sécurité web', 5, 5, true),
+(36, 'OWASP', 'Projet de sécurité des applications web', '🛡️', 1, 1, NOW(), NOW()),
+(37, 'Kali Linux', 'Distribution Linux pour tests de pénétration', '🐉', 2, 1, NOW(), NOW()),
+(38, 'HackTricks', 'Techniques de hacking éthique', '🔍', 3, 1, NOW(), NOW()),
+(39, 'Pentest', 'Tests de pénétration', '🔐', 4, 1, NOW(), NOW()),
+(40, 'Web Security Academy', 'Académie de sécurité web', '🎓', 5, 1, NOW(), NOW()),
 
 -- Sous-catégories Tools
-('Composer', 'Gestionnaire de dépendances PHP', 6, 1, true),
-('npm', 'Gestionnaire de paquets Node.js', 6, 2, true),
-('Yarn', 'Gestionnaire de paquets rapide', 6, 3, true),
-('VS Code', 'Éditeur de code', 6, 4, true);
+(41, 'Composer', 'Gestionnaire de dépendances PHP', '🎼', 1, 1, NOW(), NOW()),
+(42, 'npm', 'Gestionnaire de paquets Node.js', '📦', 2, 1, NOW(), NOW()),
+(43, 'Yarn', 'Gestionnaire de paquets rapide', '🧶', 3, 1, NOW(), NOW()),
+(44, 'VS Code', 'Éditeur de code', '💻', 4, 1, NOW(), NOW());
 
 -- =============================================================================
 -- RESSOURCES DE DOCUMENTATION
 -- =============================================================================
 
-INSERT INTO `doc_resources` (`category_id`, `name`, `description`, `language`, `url`, `search_url`, `tutorial_url`, `tags`, `difficulty_level`, `is_active`) VALUES
+INSERT INTO `doc_resources` (`id`, `name`, `description`, `url`, `language`, `category_id`, `tags`, `difficulty_level`, `search_url`, `tutorial_url`, `popularity`, `is_active`, `view_count`, `added_by`, `created_at`, `updated_at`) VALUES
 
 -- Frontend Resources
-(7, 'MDN HTML', 'Documentation officielle HTML par Mozilla', 'HTML', 'https://developer.mozilla.org/fr/docs/Web/HTML', 'https://developer.mozilla.org/fr/search', NULL, '["html", "mozilla", "mdn", "documentation"]', 'beginner', true),
-(8, 'MDN CSS', 'Guide complet CSS par Mozilla', 'CSS', 'https://developer.mozilla.org/fr/docs/Web/CSS', 'https://developer.mozilla.org/fr/search', NULL, '["css", "mozilla", "mdn", "styles"]', 'beginner', true),
-(9, 'MDN JavaScript', 'Documentation JavaScript complète', 'JavaScript', 'https://developer.mozilla.org/fr/docs/Web/JavaScript', 'https://developer.mozilla.org/fr/search', NULL, '["javascript", "mdn", "programming"]', 'intermediate', true),
-(10, 'React Docs', 'Documentation officielle React', 'React', 'https://react.dev/', 'https://react.dev/learn', NULL, '["react", "frontend", "library"]', 'intermediate', true),
-(11, 'Vue.js Guide', 'Guide officiel Vue.js', 'Vue.js', 'https://vuejs.org/', 'https://vuejs.org/guide/', NULL, '["vue", "frontend", "framework"]', 'intermediate', true),
-(12, 'Angular Docs', 'Documentation officielle Angular', 'Angular', 'https://angular.io/', 'https://angular.io/docs', NULL, '["angular", "frontend", "framework", "typescript"]', 'advanced', true),
-(13, 'Tailwind CSS', 'Framework CSS utilitaire', 'CSS', 'https://tailwindcss.com/', 'https://tailwindcss.com/docs', NULL, '["css", "framework", "utility", "responsive"]', 'intermediate', true),
-(14, 'Bootstrap', 'Framework CSS responsive', 'CSS', 'https://getbootstrap.com/', 'https://getbootstrap.com/docs/', NULL, '["css", "framework", "responsive", "components"]', 'beginner', true),
-(15, 'SASS/SCSS', 'Préprocesseur CSS avancé', 'SASS', 'https://sass-lang.com/', 'https://sass-lang.com/documentation/', NULL, '["css", "preprocessor", "sass", "scss"]', 'intermediate', true),
-(16, 'TypeScript Handbook', 'Guide complet TypeScript', 'TypeScript', 'https://www.typescriptlang.org/', 'https://www.typescriptlang.org/docs/', NULL, '["typescript", "javascript", "types", "programming"]', 'intermediate', true),
-(17, 'Webpack', 'Bundler de modules JavaScript', 'JavaScript', 'https://webpack.js.org/', 'https://webpack.js.org/concepts/', NULL, '["webpack", "bundler", "javascript", "build"]', 'advanced', true),
+(1, 'MDN HTML', 'Documentation officielle HTML par Mozilla', 'https://developer.mozilla.org/fr/docs/Web/HTML', 'HTML', 7, '["html", "mozilla", "mdn", "documentation"]', 'beginner', 'https://developer.mozilla.org/fr/search', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(2, 'MDN CSS', 'Guide complet CSS par Mozilla', 'https://developer.mozilla.org/fr/docs/Web/CSS', 'CSS', 8, '["css", "mozilla", "mdn", "styles"]', 'beginner', 'https://developer.mozilla.org/fr/search', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(3, 'MDN JavaScript', 'Documentation JavaScript complète', 'https://developer.mozilla.org/fr/docs/Web/JavaScript', 'JavaScript', 9, '["javascript", "mdn", "programming"]', 'intermediate', 'https://developer.mozilla.org/fr/search', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(4, 'React Docs', 'Documentation officielle React', 'https://react.dev/', 'React', 10, '["react", "frontend", "library"]', 'intermediate', 'https://react.dev/learn', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(5, 'Vue.js Guide', 'Guide officiel Vue.js', 'https://vuejs.org/', 'Vue.js', 11, '["vue", "frontend", "framework"]', 'intermediate', 'https://vuejs.org/guide/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(6, 'Angular Docs', 'Documentation officielle Angular', 'https://angular.io/', 'Angular', 12, '["angular", "frontend", "framework", "typescript"]', 'advanced', 'https://angular.io/docs', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(7, 'Tailwind CSS', 'Framework CSS utilitaire', 'https://tailwindcss.com/', 'CSS', 13, '["css", "framework", "utility", "responsive"]', 'intermediate', 'https://tailwindcss.com/docs', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(8, 'Bootstrap', 'Framework CSS responsive', 'https://getbootstrap.com/', 'CSS', 14, '["css", "framework", "responsive", "components"]', 'beginner', 'https://getbootstrap.com/docs/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(9, 'SASS/SCSS', 'Préprocesseur CSS avancé', 'https://sass-lang.com/', 'SASS', 15, '["css", "preprocessor", "sass", "scss"]', 'intermediate', 'https://sass-lang.com/documentation/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(10, 'TypeScript Handbook', 'Guide complet TypeScript', 'https://www.typescriptlang.org/', 'TypeScript', 16, '["typescript", "javascript", "types", "programming"]', 'intermediate', 'https://www.typescriptlang.org/docs/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(11, 'Webpack', 'Bundler de modules JavaScript', 'https://webpack.js.org/', 'JavaScript', 17, '["webpack", "bundler", "javascript", "build"]', 'advanced', 'https://webpack.js.org/concepts/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
 
 -- Backend Resources
-(18, 'PHP Manual', 'Documentation officielle PHP', 'PHP', 'https://www.php.net/manual/fr/', 'https://www.php.net/search.php', NULL, '["php", "backend", "programming", "server"]', 'intermediate', true),
-(19, 'Laravel Documentation', 'Framework web PHP élégant', 'PHP', 'https://laravel.com/docs', 'https://laravel.com/docs/master', NULL, '["php", "laravel", "framework", "mvc"]', 'intermediate', true),
-(20, 'Symfony Documentation', 'Framework PHP professionnel', 'PHP', 'https://symfony.com/doc/current/index.html', 'https://symfony.com/search', NULL, '["php", "symfony", "framework", "enterprise"]', 'advanced', true),
-(21, 'Node.js Documentation', 'Runtime JavaScript côté serveur', 'JavaScript', 'https://nodejs.org/en/docs/', 'https://nodejs.org/en/docs/guides/', NULL, '["nodejs", "javascript", "backend", "runtime"]', 'intermediate', true),
-(22, 'Express.js Guide', 'Framework web minimaliste pour Node.js', 'JavaScript', 'https://expressjs.com/', 'https://expressjs.com/en/4x/api.html', NULL, '["express", "nodejs", "web", "framework"]', 'intermediate', true),
-(23, 'Python Documentation', 'Langage de programmation Python', 'Python', 'https://docs.python.org/3/', 'https://docs.python.org/3/search.html', NULL, '["python", "programming", "backend"]', 'beginner', true),
-(24, 'Django Documentation', 'Framework web Python', 'Python', 'https://docs.djangoproject.com/', 'https://docs.djangoproject.com/en/stable/search/', NULL, '["django", "python", "web", "framework"]', 'intermediate', true),
-(25, 'Flask Documentation', 'Micro-framework web Python', 'Python', 'https://flask.palletsprojects.com/', 'https://flask.palletsprojects.com/en/latest/api/', NULL, '["flask", "python", "microframework", "web"]', 'intermediate', true),
+(12, 'PHP Manual', 'Documentation officielle PHP', 'https://www.php.net/manual/fr/', 'PHP', 18, '["php", "backend", "programming", "server"]', 'intermediate', 'https://www.php.net/search.php', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(13, 'Laravel Documentation', 'Framework web PHP élégant', 'https://laravel.com/docs', 'PHP', 19, '["php", "laravel", "framework", "mvc"]', 'intermediate', 'https://laravel.com/docs/master', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(14, 'Symfony Documentation', 'Framework PHP professionnel', 'https://symfony.com/doc/current/index.html', 'PHP', 20, '["php", "symfony", "framework", "enterprise"]', 'advanced', 'https://symfony.com/search', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(15, 'Node.js Documentation', 'Runtime JavaScript côté serveur', 'https://nodejs.org/en/docs/', 'JavaScript', 21, '["nodejs", "javascript", "backend", "runtime"]', 'intermediate', 'https://nodejs.org/en/docs/guides/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(16, 'Express.js Guide', 'Framework web minimaliste pour Node.js', 'https://expressjs.com/', 'JavaScript', 22, '["express", "nodejs", "web", "framework"]', 'intermediate', 'https://expressjs.com/en/4x/api.html', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(17, 'Python Documentation', 'Langage de programmation Python', 'https://docs.python.org/3/', 'Python', 23, '["python", "programming", "backend"]', 'beginner', 'https://docs.python.org/3/search.html', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(18, 'Django Documentation', 'Framework web Python', 'https://docs.djangoproject.com/', 'Python', 24, '["django", "python", "web", "framework"]', 'intermediate', 'https://docs.djangoproject.com/en/stable/search/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(19, 'Flask Documentation', 'Micro-framework web Python', 'https://flask.palletsprojects.com/', 'Python', 25, '["flask", "python", "microframework", "web"]', 'intermediate', 'https://flask.palletsprojects.com/en/latest/api/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
 
 -- Database Resources
-(26, 'MySQL Documentation', 'Système de gestion de base de données', 'SQL', 'https://dev.mysql.com/doc/', 'https://dev.mysql.com/doc/search/', NULL, '["mysql", "database", "sql", "relational"]', 'intermediate', true),
-(27, 'PostgreSQL Documentation', 'Base de données relationnelle avancée', 'SQL', 'https://www.postgresql.org/docs/', 'https://www.postgresql.org/search/', NULL, '["postgresql", "database", "sql", "advanced"]', 'intermediate', true),
-(28, 'MongoDB Manual', 'Base de données NoSQL orientée documents', 'NoSQL', 'https://docs.mongodb.com/', 'https://docs.mongodb.com/manual/search/', NULL, '["mongodb", "nosql", "database", "document"]', 'intermediate', true),
-(29, 'Redis Documentation', 'Store clé-valeur en mémoire', 'NoSQL', 'https://redis.io/documentation', 'https://redis.io/commands/', NULL, '["redis", "cache", "memory", "keyvalue"]', 'intermediate', true),
-(30, 'SQLite Documentation', 'Base de données légère et embarquée', 'SQL', 'https://www.sqlite.org/docs.html', 'https://www.sqlite.org/search', NULL, '["sqlite", "database", "embedded", "lightweight"]', 'beginner', true),
-(31, 'SQL Tutorial', 'Langage de requête structuré', 'SQL', 'https://www.w3schools.com/sql/', 'https://www.w3schools.com/sql/sql_syntax.asp', NULL, '["sql", "query", "database", "tutorial"]', 'beginner', true),
+(20, 'MySQL Documentation', 'Système de gestion de base de données', 'https://dev.mysql.com/doc/', 'SQL', 26, '["mysql", "database", "sql", "relational"]', 'intermediate', 'https://dev.mysql.com/doc/search/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(21, 'PostgreSQL Documentation', 'Base de données relationnelle avancée', 'https://www.postgresql.org/docs/', 'SQL', 27, '["postgresql", "database", "sql", "advanced"]', 'intermediate', 'https://www.postgresql.org/search/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(22, 'MongoDB Manual', 'Base de données NoSQL orientée documents', 'https://docs.mongodb.com/', 'NoSQL', 28, '["mongodb", "nosql", "database", "document"]', 'intermediate', 'https://docs.mongodb.com/manual/search/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(23, 'Redis Documentation', 'Store clé-valeur en mémoire', 'https://redis.io/documentation', 'NoSQL', 29, '["redis", "cache", "memory", "keyvalue"]', 'intermediate', 'https://redis.io/commands/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(24, 'SQLite Documentation', 'Base de données légère et embarquée', 'https://www.sqlite.org/docs.html', 'SQL', 30, '["sqlite", "database", "embedded", "lightweight"]', 'beginner', 'https://www.sqlite.org/search', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(25, 'SQL Tutorial', 'Langage de requête structuré', 'https://www.w3schools.com/sql/', 'SQL', 31, '["sql", "query", "database", "tutorial"]', 'beginner', 'https://www.w3schools.com/sql/sql_syntax.asp', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
 
 -- DevOps Resources
-(32, 'Docker Documentation', 'Plateforme de conteneurisation', 'Docker', 'https://docs.docker.com/', 'https://docs.docker.com/search/', NULL, '["docker", "containers", "devops", "deployment"]', 'intermediate', true),
-(33, 'Git Documentation', 'Système de contrôle de version', 'Git', 'https://git-scm.com/doc', 'https://git-scm.com/docs', NULL, '["git", "version-control", "scm", "devops"]', 'beginner', true),
-(34, 'Jenkins User Guide', 'Serveur d intégration continue', 'Jenkins', 'https://www.jenkins.io/doc/', 'https://www.jenkins.io/doc/book/', NULL, '["jenkins", "ci-cd", "automation", "devops"]', 'advanced', true),
-(35, 'Kubernetes Documentation', 'Orchestrateur de conteneurs', 'Kubernetes', 'https://kubernetes.io/docs/', 'https://kubernetes.io/docs/home/', NULL, '["kubernetes", "containers", "orchestration", "k8s"]', 'advanced', true),
+(26, 'Docker Documentation', 'Plateforme de conteneurisation', 'https://docs.docker.com/', 'Docker', 32, '["docker", "containers", "devops", "deployment"]', 'intermediate', 'https://docs.docker.com/search/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(27, 'Git Documentation', 'Système de contrôle de version', 'https://git-scm.com/doc', 'Git', 33, '["git", "version-control", "scm", "devops"]', 'beginner', 'https://git-scm.com/docs', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(28, 'Jenkins User Guide', 'Serveur d intégration continue', 'https://www.jenkins.io/doc/', 'Jenkins', 34, '["jenkins", "ci-cd", "automation", "devops"]', 'advanced', 'https://www.jenkins.io/doc/book/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(29, 'Kubernetes Documentation', 'Orchestrateur de conteneurs', 'https://kubernetes.io/docs/', 'Kubernetes', 35, '["kubernetes", "containers", "orchestration", "k8s"]', 'advanced', 'https://kubernetes.io/docs/home/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
 
 -- Security Resources
-(36, 'OWASP Top 10', 'Top 10 des vulnérabilités web', 'Security', 'https://owasp.org/www-project-top-ten/', NULL, NULL, '["owasp", "security", "vulnerabilities", "web"]', 'intermediate', true),
-(37, 'Kali Linux Tools', 'Distribution pour tests de pénétration', 'Security', 'https://www.kali.org/tools/', NULL, NULL, '["kali", "linux", "pentest", "security"]', 'advanced', true),
-(38, 'HackTricks', 'Techniques de hacking éthique', 'Security', 'https://book.hacktricks.xyz/', 'https://book.hacktricks.xyz/welcome/readme', NULL, '["hacktricks", "pentest", "hacking", "security"]', 'advanced', true),
-(39, 'NIST Cybersecurity', 'Framework de cybersécurité', 'Security', 'https://www.nist.gov/cyberframework', NULL, NULL, '["nist", "cybersecurity", "framework", "standards"]', 'advanced', true),
-(40, 'PortSwigger Web Security', 'Académie de sécurité web', 'Security', 'https://portswigger.net/web-security', 'https://portswigger.net/web-security/all-topics', 'https://portswigger.net/web-security/learning-path', '["portswigger", "web-security", "burp", "academy"]', 'intermediate', true),
+(30, 'OWASP Top 10', 'Top 10 des vulnérabilités web', 'https://owasp.org/www-project-top-ten/', 'Security', 36, '["owasp", "security", "vulnerabilities", "web"]', 'intermediate', NULL, NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(31, 'Kali Linux Tools', 'Distribution pour tests de pénétration', 'https://www.kali.org/tools/', 'Security', 37, '["kali", "linux", "pentest", "security"]', 'advanced', NULL, NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(32, 'HackTricks', 'Techniques de hacking éthique', 'https://book.hacktricks.xyz/', 'Security', 38, '["hacktricks", "pentest", "hacking", "security"]', 'advanced', 'https://book.hacktricks.xyz/welcome/readme', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(33, 'NIST Cybersecurity', 'Framework de cybersécurité', 'https://www.nist.gov/cyberframework', 'Security', 39, '["nist", "cybersecurity", "framework", "standards"]', 'advanced', NULL, NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(34, 'PortSwigger Web Security', 'Académie de sécurité web', 'https://portswigger.net/web-security', 'Security', 40, '["portswigger", "web-security", "burp", "academy"]', 'intermediate', 'https://portswigger.net/web-security/all-topics', 'https://portswigger.net/web-security/learning-path', 0, 1, 0, 'SYSTEM', NOW(), NOW()),
 
 -- Tools Resources
-(41, 'Composer Documentation', 'Gestionnaire de dépendances PHP', 'PHP', 'https://getcomposer.org/doc/', 'https://packagist.org/', NULL, '["composer", "php", "dependencies", "packages"]', 'beginner', true),
-(42, 'npm Documentation', 'Gestionnaire de paquets Node.js', 'JavaScript', 'https://docs.npmjs.com/', 'https://www.npmjs.com/', NULL, '["npm", "nodejs", "packages", "dependencies"]', 'beginner', true),
-(43, 'Yarn Documentation', 'Gestionnaire de paquets rapide', 'JavaScript', 'https://yarnpkg.com/getting-started', 'https://yarnpkg.com/cli/', NULL, '["yarn", "packages", "javascript", "fast"]', 'beginner', true),
-(44, 'VS Code Documentation', 'Éditeur de code extensible', 'Editor', 'https://code.visualstudio.com/docs', 'https://code.visualstudio.com/docs/editor/codebasics', NULL, '["vscode", "editor", "microsoft", "extensions"]', 'beginner', true);
+(35, 'Composer Documentation', 'Gestionnaire de dépendances PHP', 'https://getcomposer.org/doc/', 'PHP', 41, '["composer", "php", "dependencies", "packages"]', 'beginner', 'https://packagist.org/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(36, 'npm Documentation', 'Gestionnaire de paquets Node.js', 'https://docs.npmjs.com/', 'JavaScript', 42, '["npm", "nodejs", "packages", "dependencies"]', 'beginner', 'https://www.npmjs.com/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(37, 'Yarn Documentation', 'Gestionnaire de paquets rapide', 'https://yarnpkg.com/getting-started', 'JavaScript', 43, '["yarn", "packages", "javascript", "fast"]', 'beginner', 'https://yarnpkg.com/cli/', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW()),
+(38, 'VS Code Documentation', 'Éditeur de code extensible', 'https://code.visualstudio.com/docs', 'Editor', 44, '["vscode", "editor", "microsoft", "extensions"]', 'beginner', 'https://code.visualstudio.com/docs/editor/codebasics', NULL, 0, 1, 0, 'SYSTEM', NOW(), NOW());
 
 SET FOREIGN_KEY_CHECKS = 1;

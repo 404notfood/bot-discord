@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '@/lib/axios-config';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Control Center', href: '/control-center' },
@@ -39,7 +39,7 @@ export default function BotManagement() {
 
     const fetchAdmins = async () => {
         try {
-            const response = await axios.get('/api/discord/bot-admins');
+            const response = await apiClient.get('/api/discord/bot-admins');
             if (response.data.success) {
                 setAdmins(response.data.data);
             }
@@ -51,7 +51,7 @@ export default function BotManagement() {
 
     const fetchModerators = async () => {
         try {
-            const response = await axios.get('/api/discord/bot-moderators');
+            const response = await apiClient.get('/api/discord/bot-moderators');
             if (response.data.success) {
                 setModerators(response.data.data);
             }
@@ -65,7 +65,7 @@ export default function BotManagement() {
         if (newAdmin.user_id && newAdmin.username) {
             setIsLoading(true);
             try {
-                const response = await axios.post('/api/discord/bot-admins', {
+                const response = await apiClient.post('/api/discord/bot-admins', {
                     user_id: newAdmin.user_id,
                     username: newAdmin.username
                 });
@@ -87,7 +87,7 @@ export default function BotManagement() {
         if (newMod.user_id && newMod.username) {
             setIsLoading(true);
             try {
-                const response = await axios.post('/api/discord/bot-moderators', {
+                const response = await apiClient.post('/api/discord/bot-moderators', {
                     user_id: newMod.user_id,
                     username: newMod.username
                 });
@@ -108,7 +108,7 @@ export default function BotManagement() {
     const handleRemoveAdmin = async (userId: string) => {
         setIsLoading(true);
         try {
-            const response = await axios.delete(`/api/discord/bot-admins/${userId}`);
+            const response = await apiClient.delete(`/api/discord/bot-admins/${userId}`);
             if (response.data.success) {
                 await fetchAdmins();
                 setError('');
@@ -124,7 +124,7 @@ export default function BotManagement() {
     const handleRemoveModerator = async (userId: string) => {
         setIsLoading(true);
         try {
-            const response = await axios.delete(`/api/discord/bot-moderators/${userId}`);
+            const response = await apiClient.delete(`/api/discord/bot-moderators/${userId}`);
             if (response.data.success) {
                 await fetchModerators();
                 setError('');

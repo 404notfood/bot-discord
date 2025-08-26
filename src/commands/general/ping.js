@@ -11,6 +11,9 @@ export default {
     .setName('ping')
     .setDescription('Répond avec Pong!'),
   
+  permissions: ['bot.admin'],
+  category: 'admin',
+  
   async execute(interaction) {
     try {
       // Calculer la latence

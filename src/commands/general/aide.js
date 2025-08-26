@@ -22,11 +22,8 @@ export default {
           {
             name: '📋 Commandes Générales',
             value: '`/aide` - Affiche cette aide\n' +
-                  '`/ping` - Vérifier la latence du bot\n' +
-                  '`/info` - Informations sur le bot et le serveur\n' +
                   '`/search` - Recherche sur le web\n' +
-                  '`/docs` - Documentation technique\n' +
-                  '`/rappel` - Créer un rappel'
+                  '`/docs` - Documentation technique'
           }
         );
 
@@ -38,15 +35,22 @@ export default {
       const isAdminByID = adminIDs.includes(interaction.user.id);
       const isAdmin = hasAdminPermission || isAdminByID;
       
-      // Ajouter les commandes de modération (visibles pour tous)
-      embed.addFields({
-        name: '🛡️ Commandes de Modération',
-        value: '`/ban_add` - Bannir un utilisateur\n' +
-              '`/ban_remove` - Débannir un utilisateur'
-      });
 
       // Ajouter les commandes d'administration si l'utilisateur est admin
       if (isAdmin) {
+        embed.addFields({
+          name: '📋 Commandes Administrateur',
+          value: '`/ping` - Vérifier la latence du bot\n' +
+                '`/info` - Informations sur le bot et le serveur\n' +
+                '`/rappel` - Créer un rappel'
+        });
+        
+        embed.addFields({
+          name: '🛡️ Commandes de Modération',
+          value: '`/ban_add` - Bannir un utilisateur\n' +
+                '`/ban_remove` - Débannir un utilisateur'
+        });
+        
         embed.addFields({
           name: '🔧 Administration - Utilisateurs',
           value: '`/add_admin` - Ajouter un administrateur\n' +
@@ -115,13 +119,13 @@ export default {
       if (isAdmin) {
         embed.addFields({
           name: 'ℹ️ Informations',
-          value: `Bot avec **42 commandes** au total\n• 6 commandes générales\n• 2 commandes de modération\n• 34 commandes administratives\n\nUtilisez \`/test all\` pour vérifier toutes les fonctionnalités`,
+          value: `Bot avec **42 commandes** au total\n• 3 commandes générales\n• 5 commandes administrateur\n• 34 commandes administratives\n\nUtilisez \`/test all\` pour vérifier toutes les fonctionnalités`,
           inline: false
         });
       } else {
         embed.addFields({
           name: 'ℹ️ Informations',
-          value: 'Bot avec **8 commandes** accessibles aux membres\n• 6 commandes générales\n• 2 commandes de modération',
+          value: 'Bot avec **3 commandes** accessibles aux membres\n• 3 commandes générales seulement',
           inline: false
         });
       }

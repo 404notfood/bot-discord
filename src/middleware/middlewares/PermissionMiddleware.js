@@ -183,7 +183,12 @@ export class PermissionMiddleware {
             
             // Commandes de modération générales
             'ban_add': ['commands.moderation'],
-            'ban_remove': ['commands.moderation']
+            'ban_remove': ['commands.moderation'],
+            'rappel': ['commands.moderation'],
+            
+            // Commandes réservées aux administrateurs
+            'ping': ['bot.admin'],
+            'info': ['bot.admin']
         };
 
         return commandMap[commandName] || [];

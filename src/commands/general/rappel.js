@@ -17,6 +17,9 @@ export default {
             option.setName('membre')
                 .setDescription('Le membre à mentionner (optionnel).')
                 .setRequired(false)),
+    
+    permissions: ['commands.moderation'],
+    category: 'moderation',
     async execute(interaction) {
         try {
             const member = interaction.options.getUser('membre');

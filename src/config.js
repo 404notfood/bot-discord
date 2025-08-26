@@ -3,8 +3,15 @@
  */
 
 import { GatewayIntentBits, Partials } from 'discord.js';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import * as Logger from './utils/logger.js';
+
+// Configurer dotenv pour chercher le .env dans le répertoire parent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // Vérifier si les variables d'environnement essentielles sont définies
 const missingEnvVars = [];

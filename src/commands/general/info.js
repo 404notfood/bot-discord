@@ -12,6 +12,9 @@ export default {
     .setName('info')
     .setDescription('Affiche des informations sur le bot et le serveur'),
   
+  permissions: ['bot.admin'],
+  category: 'admin',
+  
   async execute(interaction) {
     try {
       const client = interaction.client;

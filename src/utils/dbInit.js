@@ -28,16 +28,16 @@ function logDatabaseConfig() {
   Logger.info('Configuration de la base de données', dbConfig);
 }
 
-// Définition des tables requises
+// Tables requises pour le fonctionnement du bot
 const requiredTables = {
   // Table des administrateurs
   bot_admins: `
     CREATE TABLE IF NOT EXISTS bot_admins (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       user_id VARCHAR(50) NOT NULL,
       username VARCHAR(100) NOT NULL,
       added_by VARCHAR(50) NOT NULL,
-      added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY unique_admin (user_id)
     )
   `,
@@ -49,7 +49,7 @@ const requiredTables = {
       user_id VARCHAR(50) NOT NULL,
       username VARCHAR(100) NOT NULL,
       added_by VARCHAR(50) NOT NULL,
-      added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      added_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY unique_moderator (user_id)
     )
   `,
@@ -61,70 +61,134 @@ const requiredTables = {
       level VARCHAR(20) NOT NULL,
       message TEXT NOT NULL,
       metadata JSON,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
     )
   `,
   
   // Table des logs de commandes
   command_logs: `
     CREATE TABLE IF NOT EXISTS command_logs (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       command_name VARCHAR(100) NOT NULL,
       user_id VARCHAR(50) NOT NULL,
       guild_id VARCHAR(50),
       channel_id VARCHAR(50) NOT NULL,
       options JSON,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      success TINYINT(1) NOT NULL DEFAULT 1,
+      error_message TEXT DEFAULT NULL,
+      execution_time INT DEFAULT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_command_name (command_name),
       INDEX idx_user_id (user_id),
       INDEX idx_created_at (created_at)
     )
   `,
   
-  // Table des projets
+  // Table des projets (DOIT être créée AVANT project_channels et integrations)
   projects: `
     CREATE TABLE IF NOT EXISTS projects (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(100) NOT NULL,
       description TEXT,
       owner_id VARCHAR(50) NOT NULL,
-      status ENUM('planning', 'active', 'paused', 'completed', 'cancelled') DEFAULT 'planning',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      status ENUM('planning', 'in_progress', 'paused', 'completed', 'cancelled') DEFAULT 'planning',
+      created_at TIMESTAMP NULL,
+      updated_at TIMESTAMP NULL,
       start_date DATE,
       due_date DATE,
-      completion_date DATE,
-      metadata JSON,
       INDEX idx_owner_id (owner_id),
       INDEX idx_status (status)
     )
   `,
   
-  // Table des canaux de projets
+  // Table des canaux de projets (référence projects)
   project_channels: `
     CREATE TABLE IF NOT EXISTS project_channels (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      project_id INT NOT NULL,
+      project_id BIGINT UNSIGNED NOT NULL,
       channel_id VARCHAR(50) NOT NULL,
       channel_type ENUM('general', 'task', 'voice', 'docs', 'other') DEFAULT 'general',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
       UNIQUE KEY unique_project_channel (project_id, channel_id)
     )
   `,
   
-  // Table des intégrations
+  // Table des intégrations (référence projects)
   integrations: `
     CREATE TABLE IF NOT EXISTS integrations (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      project_id INT NOT NULL,
+      project_id BIGINT UNSIGNED NOT NULL,
       type ENUM('github', 'trello', 'notion', 'figma', 'other') NOT NULL,
       external_id VARCHAR(100) NOT NULL,
       config JSON,
       is_active BOOLEAN DEFAULT TRUE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
       UNIQUE KEY unique_project_integration (project_id, type)
+    )
+  `,
+  
+  // Table des rappels
+  reminders: `
+    CREATE TABLE IF NOT EXISTS reminders (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(50) NOT NULL,
+      guild_id VARCHAR(50) DEFAULT NULL,
+      channel_id VARCHAR(50) NOT NULL,
+      message TEXT NOT NULL,
+      reminder_time TIMESTAMP NOT NULL,
+      is_completed TINYINT(1) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_user_id (user_id),
+      INDEX idx_reminder_time (reminder_time),
+      INDEX idx_is_completed (is_completed)
+    )
+  `,
+  
+  // Table des infractions Studi
+  studi_offenders: `
+    CREATE TABLE IF NOT EXISTS studi_offenders (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(50) NOT NULL,
+      guild_id VARCHAR(50) NOT NULL,
+      offense_count INT NOT NULL DEFAULT 1,
+      last_offense_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      first_offense_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      total_messages_deleted INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_user_guild (user_id, guild_id),
+      INDEX idx_user_id (user_id),
+      INDEX idx_guild_id (guild_id)
+    )
+  `,
+  
+  // Table de configuration Studi par serveur
+  studi_guild_config: `
+    CREATE TABLE IF NOT EXISTS studi_guild_config (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      guild_id VARCHAR(50) NOT NULL,
+      is_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      max_offenses INT NOT NULL DEFAULT 3,
+      ban_duration_hours INT NOT NULL DEFAULT 24,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_guild_id (guild_id)
+    )
+  `,
+  
+  // Table de whitelist Studi
+  studi_whitelist: `
+    CREATE TABLE IF NOT EXISTS studi_whitelist (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(50) NOT NULL,
+      username VARCHAR(100) NOT NULL,
+      added_by VARCHAR(50) NOT NULL,
+      reason TEXT DEFAULT NULL,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_user_id (user_id),
+      INDEX idx_user_id (user_id),
+      INDEX idx_is_active (is_active)
     )
   `
 };
@@ -218,13 +282,67 @@ async function createTables() {
     // Se connecter à la base de données
     await db.connect();
     
-    // Créer chaque table nécessaire
-    for (const [tableName, createStatement] of Object.entries(requiredTables)) {
-      Logger.info(`Vérification/création de la table ${tableName}...`);
-      await db.query(createStatement);
-    }
+         // Vérifier quelles tables existent déjà
+     const existingTables = await db.query("SHOW TABLES");
+     const existingTableNames = existingTables.map(row => {
+       const values = Object.values(row);
+       return values[0] ? values[0].toString() : null;
+     }).filter(name => name !== null);
+     
+     Logger.info('Tables existantes:', existingTableNames);
+     
+     // Créer seulement les tables qui n'existent pas encore
+     const tablesToCreate = [
+       { name: 'bot_admins', required: false },
+       { name: 'bot_moderators', required: false },
+       { name: 'logs', required: false },
+       { name: 'command_logs', required: false },
+       { name: 'projects', required: false },
+       { name: 'project_channels', required: true },
+       { name: 'integrations', required: true },
+       { name: 'reminders', required: true },
+       { name: 'studi_offenders', required: true },
+       { name: 'studi_guild_config', required: true },
+       { name: 'studi_whitelist', required: true }
+     ];
+     
+     for (const tableInfo of tablesToCreate) {
+       const tableName = tableInfo.name;
+       const isRequired = tableInfo.required;
+       
+       // Vérifier si la table existe vraiment
+       const tableExists = existingTableNames.some(table => 
+         table && table.toLowerCase() === tableName.toLowerCase()
+       );
+       
+       if (tableExists) {
+         Logger.info(`Table ${tableName} existe déjà, ignorée`);
+         continue;
+       }
+       
+       if (requiredTables[tableName]) {
+         Logger.info(`Création de la table ${tableName}...`);
+         try {
+           await db.query(requiredTables[tableName]);
+           Logger.info(`Table ${tableName} créée avec succès`);
+         } catch (error) {
+           if (isRequired) {
+             Logger.error(`Erreur lors de la création de la table ${tableName}:`, {
+               error: error.message
+             });
+             return false;
+           } else {
+             Logger.warn(`Impossible de créer la table ${tableName} (non critique):`, {
+               error: error.message
+             });
+           }
+         }
+       }
+     }
     
-    Logger.info('Toutes les tables ont été vérifiées/créées avec succès');
+    // Les tables sont déjà créées par la boucle ci-dessus, pas besoin de les recréer
+    
+    Logger.info('Toutes les tables nécessaires ont été vérifiées/créées avec succès');
     return true;
   } catch (error) {
     Logger.error('Erreur lors de la création des tables', {
@@ -267,6 +385,9 @@ export async function initDatabase() {
       return false;
     }
     
+    // 4. Créer un administrateur par défaut si aucun n'existe
+    await createDefaultAdmin();
+    
     Logger.info('Initialisation de la base de données terminée avec succès');
     return true;
   } catch (error) {
@@ -275,6 +396,47 @@ export async function initDatabase() {
       stack: error.stack
     });
     return false;
+  }
+}
+
+/**
+ * Crée un administrateur par défaut si aucun n'existe
+ */
+async function createDefaultAdmin() {
+  try {
+    // Vérifier s'il y a déjà des administrateurs
+    const existingAdmins = await db.query("SELECT COUNT(*) as count FROM bot_admins");
+    const adminCount = existingAdmins[0].count;
+    
+         if (adminCount === 0) {
+       Logger.info('Aucun administrateur trouvé, création d\'un admin par défaut...');
+       
+       try {
+         // Créer un administrateur par défaut
+         await db.query(`
+           INSERT INTO bot_admins (user_id, username, added_by, added_at) 
+           VALUES (?, ?, ?, NOW())
+         `, ['709042879145836564', 'hansel_bwa', 'SYSTEM']);
+         
+         // Ajouter le rôle admin
+         await db.query(`
+           INSERT INTO bot_roles (user_id, role_type, granted_by, granted_at, is_active) 
+           VALUES (?, ?, ?, NOW(), 1)
+         `, ['709042879145836564', 'admin', 'SYSTEM']);
+         
+         Logger.info('Administrateur par défaut créé avec succès');
+       } catch (error) {
+         Logger.warn('Impossible de créer l\'administrateur par défaut:', {
+           error: error.message
+         });
+       }
+     } else {
+       Logger.info(`${adminCount} administrateur(s) existant(s), aucun admin par défaut créé`);
+     }
+  } catch (error) {
+    Logger.warn('Impossible de créer l\'administrateur par défaut:', {
+      error: error.message
+    });
   }
 }
 
